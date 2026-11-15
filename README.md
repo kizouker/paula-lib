@@ -1,4 +1,20 @@
-# pt2-clone
+# protracker2-agent-assist
+
+An **agent-assisted ProTracker 2** project (forked from [`8bitbubsy/pt2-clone`](https://github.com/8bitbubsy/pt2-clone) for the **Kiroween** hackathon — **Resurrection** track, using Kiro CLI & Kiro Crew).
+
+## Project Intentions
+- **Creative co-pilot, not a jukebox:** Describe beats, basslines, time signatures (3/4, 4/4), or harmonic variations (e.g., 7ths, 13ths, blue notes) in plain language and get editable ProTracker pattern data back—never copying existing songs or locking you into flat audio renders.
+- **Clean encapsulation (`libpt2`):** Wrap `pt2-clone`'s authentic Amiga Paula audio and replayer core behind a clean library interface so upstream `pt2-clone` improvements stay easy to pull while supporting a custom UI and Rust/DSP experiments.
+- **Self-contained starter kit:** Bundle a small, copyright-free 8-bit sample kit (kick, snare, hi-hat, bass, piano) so pattern generation works out of the box.
+
+## Planning & Specs
+- [Vision](docs/vision.md) — vision line, themes, roadmap, and walking skeleton
+- [Non-Functional Requirements](docs/non-functional-requirements.md) — CI/CD, branch rules, security, and Wiki requirements
+- [To-Do List](docs/todo.md)
+
+---
+
+# Upstream: pt2-clone
 ProTracker 2 clone for Windows/macOS/Linux
 
 Aims to be a highly accurate clone of the classic ProTracker 2.3D software for Amiga. \
