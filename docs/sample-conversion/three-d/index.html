@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulations in Rust (three-d): 8-bit sample conversion</title>
+<link rel="stylesheet" href="../../assets/glow/glow.css">
+<style>
+  main { max-width: 1440px; }
+  canvas#viz { width: 100%; height: 820px; background: var(--bg); border: 1px solid var(--grid); border-radius: 10px; }
+  #status { font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Simulations in Rust (three-d)</h1>
+  <p class="muted">The same simulations as the <a href="../simulations.html">JavaScript page</a>, written in Rust with
+    <a href="https://github.com/asny/three-d">three-d</a> and compiled to WebAssembly.
+    The math is the <code>pt2-dsp</code> crate the tracker uses; colours come from the shared <code>palette.json</code>.</p>
+  <p class="muted" id="status">Loading WebAssembly…</p>
+  <canvas id="viz"></canvas>
+  <p class="muted">Source: <a href="https://github.com/kizouker/protracker2-agent-assist/tree/main/crates/pt2-viz">crates/pt2-viz</a>
+    · math: <a href="https://github.com/kizouker/protracker2-agent-assist/tree/main/crates/pt2-dsp">crates/pt2-dsp</a></p>
+</main>
+<script type="module">
+  const status = document.getElementById("status");
+  try {
+    const { default: init } = await import("./pkg/pt2-viz.js");
+    status.textContent = "Running: WebGL2 via three-d.";
+    await init();
+  } catch (err) {
+    // winit ends its event loop by throwing a control-flow "exception"; that is normal.
+    if (!String(err).includes("Using exceptions for control flow")) {
+      status.textContent = "Could not start: " + err;
+      console.error(err);
+    }
+  }
+</script>
+</body>
+</html>

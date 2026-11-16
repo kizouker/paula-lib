@@ -1,0 +1,16 @@
+[package]
+name = "pt2-dsp"
+version = "0.1.0"
+edition = "2024"
+description = "Math of the 8-bit sample conversion chain (aliasing, quantization, dither), shared by the tracker and the web simulations"
+license = "BSD-3-Clause"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[profile.release]
+opt-level = "z"
+lto = true
+panic = "abort"
+codegen-units = 1

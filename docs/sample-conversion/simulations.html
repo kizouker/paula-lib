@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interactive simulations: 8-bit sample conversion</title>
+<link rel="stylesheet" href="../assets/glow/glow.css">
+<script type="importmap">
+{ "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+<script type="module" src="js/main.js"></script>
+</head>
+<body>
+<main>
+  <h1>Interactive simulations</h1>
+  <p class="muted">8-bit sample conversion, live in the browser. Equation numbers refer to the
+    <a href="./">sample conversion page</a>. Everything runs locally in your browser; nothing is sent anywhere.</p>
+
+  <section class="card" id="alias">
+    <h2>1. Aliasing and the low-pass filter (eq. 2–3)</h2>
+    <p>Sampling at 8363 Hz cannot tell a tone above 4181.5 Hz from a lower one. Move the tone past the Nyquist line, then switch on the filter.</p>
+    <div class="legend">
+      <span><i class="sw cyan"></i>input tone</span>
+      <span><i class="sw green"></i>after filter</span>
+      <span><i class="sw pink"></i>alias (what you hear)</span>
+      <span><i class="sw dot white"></i>sample point</span>
+      <span><i class="sw orange"></i>Nyquist 4181.5 Hz</span>
+    </div>
+    <div class="controls">
+      <label>Tone <input id="a-f" type="range" min="100" max="24000" step="50" value="7000"><span class="val" id="a-fv"></span></label>
+      <label><input id="a-lp" type="checkbox"> Low-pass before sampling</label>
+      <label>Cutoff <input id="a-fc" type="range" min="1000" max="4181" step="10" value="3800"><span class="val" id="a-fcv"></span></label>
+    </div>
+    <div class="panel-title">Time, 1.5 ms: tone, sample points and the tone the points appear to have</div>
+    <canvas id="a-t" class="h-a"></canvas>
+    <div class="panel-title">Frequency, 0–24 kHz</div>
+    <canvas id="a-s" class="h-b"></canvas>
+    <div class="msg" id="a-msg"></div>
+  </section>
+
+  <section class="card" id="dither">
+    <h2>2. Quantization with and without dither (eq. 5–6)</h2>
+    <p>A decaying tone is rounded to a few bits. Without dither the error follows the signal; with TPDF dither it becomes noise and the tail survives on average.</p>
+    <div class="legend">
+      <span><i class="sw cyan"></i>input</span>
+      <span><i class="sw pink"></i>no dither</span>
+      <span><i class="sw orange"></i>RPDF dither</span>
+      <span><i class="sw green"></i>TPDF dither</span>
+    </div>
+    <div class="controls">
+      <label>Bits <input id="d-b" type="range" min="2" max="8" value="3"><span class="val" id="d-bv"></span></label>
+      <label>Dither <select id="d-k"><option value="none">none</option><option value="rpdf">RPDF (one uniform)</option><option value="tpdf" selected>TPDF (two uniforms)</option></select></label>
+      <button id="d-seed">New noise</button>
+    </div>
+    <div class="panel-title">Input and quantized output</div>
+    <canvas id="d-y" class="h-a"></canvas>
+    <div class="panel-title">Error ν = output − input</div>
+    <canvas id="d-e" class="h-b"></canvas>
+    <div class="stats" id="d-stats"></div>
+  </section>
+
+  <section class="card" id="moments">
+    <h2>3. Monte Carlo check of the error moments (eq. 7–8)</h2>
+    <p>For each input value z between two quantizer steps, draw many dither values and measure the mean and the mean square of the error. TPDF should give a flat q²/4 line.</p>
+    <div class="legend">
+      <span><i class="sw pink"></i>no dither</span>
+      <span><i class="sw orange"></i>RPDF</span>
+      <span><i class="sw green"></i>TPDF</span>
+      <span><i class="sw white"></i>theory: q²/4 (TPDF), q²/12</span>
+    </div>
+    <div class="controls">
+      <label>Draws per point <input id="m-n" type="range" min="500" max="40000" step="500" value="10000"><span class="val" id="m-nv"></span></label>
+      <button id="m-run">Run again</button>
+    </div>
+    <div class="two">
+      <div><div class="panel-title">E[ν | z]</div><canvas id="m-mean" class="h-c"></canvas></div>
+      <div><div class="panel-title">E[ν² | z]</div><canvas id="m-msq" class="h-c"></canvas></div>
+    </div>
+    <div class="stats" id="m-stats"></div>
+  </section>
+
+  <p class="muted">Also in Rust: <a href="three-d/">the same simulations in three-d, compiled to WebAssembly</a>.</p>
+  <p class="muted">Renderer: <span id="renderer">loading…</span>
+    (<a href="?renderer=2d">Canvas 2D</a> · <a href="?">WebGL bloom</a>)</p>
+  <p class="muted">Code: the math is in <code>js/dsp.js</code> (with equation numbers), each simulation in its own module,
+    and the shared glow theme in <code>assets/glow/</code>. Static figures are rendered by
+    <a href="https://github.com/kizouker/protracker2-agent-assist/blob/main/docs/sample-conversion/scripts/demo.py">scripts/demo.py</a>
+    from the same palette.</p>
+</main>
+</body>
+</html>

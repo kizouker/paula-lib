@@ -7,6 +7,8 @@ title: 8-bit sample conversion
 
 How a modern recording (24-bit, 48 kHz, often stereo) becomes a ProTracker sample (8-bit, mono, 8363 Hz, which plays at the note C-2).
 
+**Try it live:** [interactive simulations](simulations.html) of aliasing, dither and the error moments.
+
 Notation: input $x_L[n], x_R[n]$ at $f_i = 48000$ Hz, output rate $f_o = 8363$ Hz, 8-bit step $q = 2/2^8 = 2^{-7}$ on the range $[-1, 1)$.
 
 ## 1. Stereo to mono
