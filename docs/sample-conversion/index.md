@@ -101,3 +101,13 @@ uv run --with numpy --with matplotlib demo.py
 ```
 
 The script writes the three PNG files to `../figures/`, which updates this page. Edit `quant()` or the dither lines to see how the error changes.
+
+## References
+
+BibTeX for everything below: [references.bib](references.bib).
+
+- **Sampling and aliasing:** Nyquist (1928), Shannon (1949); Söderkvist, *Tidsdiskreta signaler & system* (Linköping), a Swedish textbook on sampling and discrete-time systems; Oppenheim and Schafer, *Discrete-Time Signal Processing* (3rd ed., 2010); Crochiere and Rabiner, *Multirate Digital Signal Processing* (1983) for non-integer rate conversion.
+- **Dither:** Wannamaker, Lipshitz, Vanderkooy and Wright, "A Theory of Nonsubtractive Dither", *IEEE Trans. Signal Processing* 48(2), 2000. The derivation above follows it. See also Lipshitz, Wannamaker and Vanderkooy, "Quantization and Dither: A Theoretical Survey", *JAES* 40(5), 1992, and Widrow and Kollár, *Quantization Noise* (2008).
+- **Digital audio in practice:** Huber and Runstein, *Modern Recording Techniques* (7th ed., 2010); Rumsey and McCormick, *Sound and Recording: An Introduction* (5th ed., 2006).
+- **Sampling culture:** Schloss, *Making Beats: The Art of Sample-Based Hip-Hop* (2014).
+- **Tools and platform:** the SoX manual (`rate`, `dither`); the *Amiga Hardware Reference Manual* (3rd ed., 1991) for the Paula chip. The 8363 Hz rate is the NTSC Amiga clock, 3 579 545 Hz, divided by the C-2 period 428.
