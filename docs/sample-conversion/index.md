@@ -110,4 +110,4 @@ BibTeX for everything below: [references.bib](references.bib).
 - **Dither:** Wannamaker, Lipshitz, Vanderkooy and Wright, "A Theory of Nonsubtractive Dither", *IEEE Trans. Signal Processing* 48(2), 2000. The derivation above follows it. See also Lipshitz, Wannamaker and Vanderkooy, "Quantization and Dither: A Theoretical Survey", *JAES* 40(5), 1992, and Widrow and Kollár, *Quantization Noise* (2008).
 - **Digital audio in practice:** Huber and Runstein, *Modern Recording Techniques* (7th ed., 2010); Rumsey and McCormick, *Sound and Recording: An Introduction* (5th ed., 2006).
 - **Sampling culture:** Schloss, *Making Beats: The Art of Sample-Based Hip-Hop* (2014).
-- **Tools and platform:** the SoX manual (`rate`, `dither`); the *Amiga Hardware Reference Manual* (3rd ed., 1991) for the Paula chip. The 8363 Hz rate is the NTSC Amiga clock, 3 579 545 Hz, divided by the C-2 period 428.
+- **Tools and platform:** the SoX manual (`rate`, `dither`); the *Amiga Hardware Reference Manual* (1989 edition, for Kickstart 1.3) for the Paula chip. The 8363 Hz rate is the NTSC Amiga clock, 3 579 545 Hz, divided by the C-2 period 428.
