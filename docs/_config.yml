@@ -1,9 +1,14 @@
 title: protracker2-agent-assist
-description: Agent-assisted ProTracker 2 on the pt2-clone engine
-theme: jekyll-theme-midnight
+description: An agent-assisted ProTracker 2-style tracker
+# Own layout in _layouts/default.html with the glow theme (assets/glow/). No external theme.
 markdown: kramdown
 kramdown:
   math_engine: mathjax
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
 exclude:
   - prompts/
   - upstream/

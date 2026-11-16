@@ -1,0 +1,231 @@
+% References for docs/sample-conversion (8-bit sample conversion).
+%
+% Verification status, checked 2026-11-17:
+%   [doi]   DOI, volume, issue and pages confirmed against Crossref.
+%   [own]   From the author's own library (MUVA61 bibliographies or Apple Books);
+%           edition and ISBN read from the book itself where marked.
+%   [check] Standard citation not confirmed online; verify before formal use.
+
+% ---------------------------------------------------------------------------
+% Sampling theorem and aliasing (eq. 2-3)
+% ---------------------------------------------------------------------------
+
+% [doi]
+@article{Nyquist1928TelegraphTransmission,
+  author    = {Nyquist, Harry},
+  title     = {Certain Topics in Telegraph Transmission Theory},
+  journal   = {Transactions of the American Institute of Electrical Engineers},
+  year      = {1928},
+  volume    = {47},
+  number    = {2},
+  pages     = {617--644},
+  doi       = {10.1109/T-AIEE.1928.5055024}
+}
+
+% [doi]
+@article{Shannon1949PresenceOfNoise,
+  author    = {Shannon, Claude E.},
+  title     = {Communication in the Presence of Noise},
+  journal   = {Proceedings of the IRE},
+  year      = {1949},
+  volume    = {37},
+  number    = {1},
+  pages     = {10--21},
+  doi       = {10.1109/JRPROC.1949.232969}
+}
+
+% [own] Rickard's course book from Linköping ("the green book"). LIBRIS lists
+% editions 1990, 1994 and 2005, published in Linköping by the author.
+% Year set to the latest edition: change it to the edition on the shelf.
+% LIBRIS 2005: http://libris.kb.se/bib/12536038
+@book{Soderkvist2005TidsdiskretaSignaler,
+  author    = {S{\"o}derkvist, Sune},
+  title     = {Tidsdiskreta signaler \& system},
+  address   = {Link{\"o}ping},
+  year      = {2005},
+  language  = {swedish},
+  note      = {Also 1990 and 1994 editions. Companion: \emph{Tidsdiskreta signaler \& system: {\"O}vningsbok} (1995)}
+}
+
+% [check] Standard graduate text: sampling, rate conversion, filter design.
+@book{OppenheimSchafer2010DTSP,
+  author    = {Oppenheim, Alan V. and Schafer, Ronald W.},
+  title     = {Discrete-Time Signal Processing},
+  edition   = {3},
+  publisher = {Pearson},
+  address   = {Upper Saddle River, NJ},
+  year      = {2010}
+}
+
+% [check] Polyphase resampling with non-integer ratios such as 8363/48000.
+@book{CrochiereRabiner1983Multirate,
+  author    = {Crochiere, Ronald E. and Rabiner, Lawrence R.},
+  title     = {Multirate Digital Signal Processing},
+  publisher = {Prentice-Hall},
+  address   = {Englewood Cliffs, NJ},
+  year      = {1983}
+}
+
+% ---------------------------------------------------------------------------
+% Quantization and dither (eq. 5-8)
+% ---------------------------------------------------------------------------
+
+% [doi] The derivation in index.md (characteristic function with double zeros) follows this paper.
+@article{Wannamaker2000NonsubtractiveDither,
+  author    = {Wannamaker, Robert A. and Lipshitz, Stanley P. and Vanderkooy, John and Wright, J. Nelson},
+  title     = {A Theory of Nonsubtractive Dither},
+  journal   = {IEEE Transactions on Signal Processing},
+  year      = {2000},
+  volume    = {48},
+  number    = {2},
+  pages     = {499--516},
+  doi       = {10.1109/78.823976}
+}
+
+% [check] JAES papers have no Crossref DOI; citation from the standard literature.
+@article{Lipshitz1992QuantizationDither,
+  author    = {Lipshitz, Stanley P. and Wannamaker, Robert A. and Vanderkooy, John},
+  title     = {Quantization and Dither: A Theoretical Survey},
+  journal   = {Journal of the Audio Engineering Society},
+  year      = {1992},
+  volume    = {40},
+  number    = {5},
+  pages     = {355--375}
+}
+
+% [check]
+@article{VanderkooyLipshitz1984BelowLSB,
+  author    = {Vanderkooy, John and Lipshitz, Stanley P.},
+  title     = {Resolution Below the Least Significant Bit in Digital Systems with Dither},
+  journal   = {Journal of the Audio Engineering Society},
+  year      = {1984},
+  volume    = {32},
+  number    = {3},
+  pages     = {106--113}
+}
+
+% [doi-book] Found via Crossref (10.1017/CBO9780511754661); chapter "Dither".
+@book{WidrowKollar2008QuantizationNoise,
+  author    = {Widrow, Bernard and Koll{\'a}r, Istv{\'a}n},
+  title     = {Quantization Noise: Roundoff Error in Digital Computation, Signal Processing, Control, and Communications},
+  publisher = {Cambridge University Press},
+  address   = {Cambridge},
+  year      = {2008},
+  doi       = {10.1017/CBO9780511754661}
+}
+
+% ---------------------------------------------------------------------------
+% Digital audio, recording practice (author's own library)
+% ---------------------------------------------------------------------------
+
+% [own] Apple Books. Edition and ISBN read from the book. Covers sampling, aliasing, quantization and dither.
+@book{HuberRunstein2010ModernRecording,
+  author    = {Huber, David Miles and Runstein, Robert E.},
+  title     = {Modern Recording Techniques},
+  edition   = {7},
+  publisher = {Focal Press / Elsevier},
+  address   = {Burlington, MA},
+  year      = {2010},
+  isbn      = {9780240810690}
+}
+
+% [own] Apple Books. Edition and ISBN read from the book. Covers aliasing and dither in depth.
+@book{RumseyMcCormick2006SoundAndRecording,
+  author    = {Rumsey, Francis and McCormick, Tim},
+  title     = {Sound and Recording: An Introduction},
+  edition   = {5},
+  publisher = {Focal Press},
+  address   = {Oxford},
+  year      = {2006},
+  isbn      = {9780240519968}
+}
+
+% [own] MUVA61, musikproduktion i praktiken (Uppgift 3).
+@book{dittmarAudio,
+  author        = {Dittmar, Tim},
+  title         = {Audio Engineering 101},
+  year          = {2015},
+  publisher     = {Focal Press}
+}
+
+% [own] MUVA61 reading list.
+@book{Izhaki2023MixingAudio2e,
+  author    = {Izhaki, Roey},
+  title     = {Mixing Audio: Concepts, Practices and Tools},
+  edition   = {2},
+  address   = {Amsterdam},
+  publisher = {Focal Press / Elsevier},
+  year      = {2023},
+  isbn      = {9781032219448},
+  note      = {Selected chapters (ca. 300 pages). First edition also acceptable.}
+}
+
+% ---------------------------------------------------------------------------
+% Sampling culture and music technology (context; author's own library)
+% ---------------------------------------------------------------------------
+
+% [own] MUVA61 reading list. Sample-based production, the practice this kit serves.
+@inbook{Schloss2014MakingBeatsSel,
+  author    = {Schloss, Joseph G.},
+  title     = {Making Beats: The Art of Sample-Based Hip-Hop},
+  address   = {Middletown, CT},
+  publisher = {Wesleyan University Press},
+  year      = {2014},
+  pages     = {135--168}
+}
+
+% [own] MUVA61 reading list.
+@article{SterneRodgers2011PoeticsOfSignalProcessing,
+  author    = {Sterne, Jonathan and Rodgers, Tara},
+  title     = {The Poetics of Signal Processing},
+  journal   = {differences},
+  year      = {2011},
+  volume    = {22},
+  number    = {2-3},
+  pages     = {31--53},
+  doi       = {10.1215/10407391-1428834},
+  url       = {https://doi.org/10.1215/10407391-1428834},
+  urldate   = {2025-10-14}
+}
+
+% [own] MUVA61 reading list.
+@book{dEscrivan2012MusicTechnology,
+  author    = {d'Escriv{\'a}n, Julio},
+  title     = {Music Technology},
+  address   = {Cambridge},
+  publisher = {Cambridge University Press},
+  year      = {2012},
+  isbn      = {9780521170420}
+}
+
+% [own] MUVA61 reading list.
+@book{Burgess2014HistoryOfMusicProduction,
+  author    = {Burgess, Richard James},
+  title     = {The History of Music Production},
+  address   = {Oxford and New York},
+  publisher = {Oxford University Press},
+  year      = {2014},
+  isbn      = {9780199357178}
+}
+
+% ---------------------------------------------------------------------------
+% Tools and platform
+% ---------------------------------------------------------------------------
+
+@misc{SoX2015Manual,
+  author       = {Bagwell, Chris and Norskog, Lance and {SoX contributors}},
+  title        = {{SoX} -- Sound eXchange, Version 14.4.2: \texttt{rate} and \texttt{dither} effects},
+  year         = {2015},
+  howpublished = {\url{https://sox.sourceforge.net/sox.html}},
+  note         = {Manual page}
+}
+
+% [check] Paula audio chip; the 8363 Hz C-2 rate is the NTSC clock (3579545 Hz) divided by period 428.
+@book{Commodore1991AmigaHRM,
+  author    = {{Commodore-Amiga, Inc.}},
+  title     = {Amiga Hardware Reference Manual},
+  edition   = {3},
+  publisher = {Addison-Wesley},
+  address   = {Reading, MA},
+  year      = {1991}
+}
