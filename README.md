@@ -1,56 +1,60 @@
 # protracker2-agent-assist
 
-An **agent-assisted ProTracker 2** project (forked from [`8bitbubsy/pt2-clone`](https://github.com/8bitbubsy/pt2-clone) for the **Kiroween** hackathon — **Resurrection** track, using Kiro CLI & Kiro Crew).
+An agent-assisted ProTracker 2. You describe a beat, a bassline or a harmonic twist in plain language, and the agent writes editable tracker patterns back into the grid. Sound comes from the authentic Amiga Paula engine of [`8bitbubsy/pt2-clone`](https://github.com/8bitbubsy/pt2-clone), which this repository is forked from.
 
-## Project Intentions
-- **Creative co-pilot, not a jukebox:** Describe beats, basslines, time signatures (3/4, 4/4), or harmonic variations (e.g., 7ths, 13ths, blue notes) in plain language and get editable ProTracker pattern data back—never copying existing songs or locking you into flat audio renders.
-- **Clean encapsulation (`libpt2`):** Wrap `pt2-clone`'s authentic Amiga Paula audio and replayer core behind a clean library interface so upstream `pt2-clone` improvements stay easy to pull while supporting a custom UI and Rust/DSP experiments.
-- **Self-contained starter kit:** Bundle a small, copyright-free 8-bit sample kit (kick, snare, hi-hat, bass, piano) so pattern generation works out of the box.
+Built for the **Kiroween** hackathon (Resurrection track) with Kiro CLI and Kiro Crew.
 
-## Planning & Specs
-- [Vision](docs/vision.md) — vision line, themes, roadmap, and walking skeleton
-- [Non-Functional Requirements](docs/non-functional-requirements.md) — CI/CD, branch rules, security, and Wiki requirements
-- [To-Do List](docs/todo.md)
+**Website:** [kizouker.github.io/protracker2-agent-assist](https://kizouker.github.io/protracker2-agent-assist/)
 
----
+## Goals
 
-# Upstream: pt2-clone
-ProTracker 2 clone for Windows/macOS/Linux
+- **Creative co-pilot, not a jukebox.** The agent produces pattern data you can edit, never flat audio renders or copies of existing songs.
+- **Clean core library (`libpt2`).** The `pt2-clone` audio, replayer and module I/O sit behind a small library boundary, wrapped from Rust, so upstream fixes stay easy to pull.
+- **Own starter sample kit.** A small 8-bit kit (kick, snare, hi-hat, bass, piano) recorded by the author, so pattern generation works out of the box.
 
-Aims to be a highly accurate clone of the classic ProTracker 2.3D software for Amiga. \
-Has additional audio filters and audio mixer improvements to make it sound close to a real Amiga computer. \
-*What is ProTracker? Read about it on [Wikipedia](https://en.wikipedia.org/wiki/ProTracker).*
+## Status
 
+| Area | State |
+|---|---|
+| `pt2-clone` builds and plays on macOS (SDL2) | Done |
+| Requirements, UX requirements, non-functional requirements | Reviewed |
+| Headless engine proof of concept from Rust | Works locally, not merged |
+| Starter kit | Kick and bass in place; snare, hi-hat and piano missing |
 
-# Releases
-Windows/macOS binary releases can always be found at [16-bits.org/pt2.php](https://16-bits.org/pt2.php).
+## 8-bit sample conversion
 
-# Note to Linux users
-- On some distros, a "pt2-clone" package may be available in the distribution's package repository
-- `protracker.ini` should be copied to `~/.config/protracker/` (or ~/.protracker/). If you do this, make sure you delete `protracker.ini` if it exists in the same directory as the program executable. You can find an up-to-date copy in the source code tree at `/release/other/` (or inside the Windows/macOS release zips at [16-bits.org/pt2.php](https://16-bits.org/pt2.php))
+ProTracker plays 8-bit mono samples, and 8363 Hz is the rate that plays back at the note C-2. Modern recordings (24-bit, 48 kHz, often stereo) are converted in four steps:
 
-# Note to macOS users
-- To get the config file to load, protracker.ini has to be in the same directory as the .app (program) itself
+1. **Stereo to mono.** Average the channels: $x_m = \tfrac12(x_L + x_R)$.
+2. **Low-pass, then resample to 8363 Hz.** Everything above the Nyquist frequency of 4181.5 Hz is filtered out first. Otherwise it folds down as aliasing: a 7000 Hz tone becomes $|7000 - 8363| = 1363$ Hz.
+3. **Normalise** the peak to −0.3 dBFS, so the 256 levels are used fully.
+4. **TPDF dither, then round to 8 bits.** Adding triangular noise of about ±1 step makes the rounding error independent of the signal. Distortion becomes a steady noise floor, at a cost of about 4.8 dB (SNR ≈ 45 dB for a full-scale sine instead of ≈ 50 dB).
 
-# Handy keybindings
-1) Press F12 to toggle audio output between Amiga 500 and Amiga 1200. Amiga 500 mode uses a 4.42kHz 6dB/oct low-pass filter that matches that of a real A500.
-If you want this to always be on, have a look at the config file. \
-__Note__: This must not be confused with the "LED" filter, which is a completely different filter.
-2) Press SHIFT+F12 to toggle stereo separation between centered (mono), custom (set in the config file) and Amiga (100%)
-3) Press CTRL+F12 to toggle BPM timing mode between CIA (most commonly used) and vblank. Only do this if you know what
-you are doing!
-4) Press ALT+F11 to toggle real VU-meters. This will change the fake VU-meters into real, averaged VU-meters.
-This can also be permanently activated by editing the config file
-5) Press F11 to toggle fullscreen mode. Again, this can also be permanently activated in the config file
+What is lost: everything above about 4 kHz, some attack sharpness, and the noise floor. Kick and bass keep most of their character because their energy sits below 1 kHz.
 
-# Screenshots
+The full derivation, with formulas and figures, is on the [sample conversion page](https://kizouker.github.io/protracker2-agent-assist/sample-conversion/). Sources: [`docs/sample-conversion/`](docs/sample-conversion/).
 
-![Screenshot #1](https://16-bits.org/pt2-clone-1.png)
-![Screenshot #2](https://16-bits.org/pt2-clone-2.png)
+## Repository layout
 
+| Path | Contents |
+|---|---|
+| `src/` | Upstream `pt2-clone` source (kept unmodified) |
+| `docs/` | Vision, requirements and the project website |
+| `docs/sample-conversion/` | 8-bit conversion explained, with the script that renders the figures |
+| `assets/starter-kit/` | Starter samples and their provenance |
+| `docs/upstream/pt2-clone-README.md` | The original `pt2-clone` README: releases, keybindings, compiling |
 
-# Compiling the code
-Please read HOW-TO-COMPILE.txt file in the repository.
+## Planning and specs
 
-PS: The source code is quite hackish and hardcoded. \
-My first priority is to make an accurate clone, and not to make flexible and easily modifiable code.
+- [Vision](docs/vision.md)
+- [Non-functional requirements](docs/non-functional-requirements.md)
+- [UX requirements](docs/ux-requirements.md)
+- [To-do list](docs/todo.md)
+
+## Building
+
+Building the tracker is unchanged from upstream. See [`HOW-TO-COMPILE.txt`](HOW-TO-COMPILE.txt) and the [original README](docs/upstream/pt2-clone-README.md).
+
+## Credits and licence
+
+ProTracker 2 clone by Olav "8bitbubsy" Sørensen: [`8bitbubsy/pt2-clone`](https://github.com/8bitbubsy/pt2-clone). See [`LICENSE`](LICENSE) and [`LICENSES.txt`](LICENSES.txt). The starter samples are the author's own recordings; see [`assets/starter-kit/PROVENANCE.md`](assets/starter-kit/PROVENANCE.md).
