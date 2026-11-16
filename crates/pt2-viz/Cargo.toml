@@ -1,0 +1,17 @@
+[package]
+name = "pt2-viz"
+version = "0.1.0"
+edition = "2024"
+description = "three-d (Rust) version of the 8-bit conversion simulations, using pt2-dsp"
+license = "BSD-3-Clause"
+publish = false
+
+[dependencies]
+pt2-dsp = { path = "../pt2-dsp" }
+three-d = { version = "0.19", features = ["egui-gui"] }
+
+# Small download for the web build.
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1

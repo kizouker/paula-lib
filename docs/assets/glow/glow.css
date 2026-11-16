@@ -1,0 +1,45 @@
+/* Glow theme. Colours come from palette.json: glow-plot.js loadPalette()
+   writes each entry as a CSS variable (--bg, --cyan, ...). The values below
+   are only fallbacks for the moment before the palette has loaded. */
+:root {
+  --bg: #0b0f1a; --card: #10172a; --grid: #1c2438; --text: #d6e2ff; --muted: #8796b8;
+  --cyan: #00e5ff; --pink: #ff2e97; --green: #39ff88; --orange: #ffb02e; --white: #ffffff;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 980px; margin: 0 auto; padding: 24px 16px 64px; }
+h1 { font-size: 1.7em; margin: 0 0 4px; text-shadow: 0 0 12px color-mix(in srgb, var(--cyan) 50%, transparent); }
+h2 { font-size: 1.25em; margin: 0 0 6px; color: var(--cyan); text-shadow: 0 0 10px color-mix(in srgb, var(--cyan) 45%, transparent); }
+a { color: var(--cyan); }
+p { margin: 6px 0; }
+.muted { color: var(--muted); }
+
+.card { background: var(--card); border: 1px solid var(--grid); border-radius: 10px; padding: 16px; margin: 22px 0;
+        box-shadow: 0 0 24px color-mix(in srgb, var(--cyan) 6%, transparent); }
+
+/* Legend sticks to the top of its card so it stays visible while scrolling. */
+.legend { position: sticky; top: 0; z-index: 2; background: var(--card); padding: 6px 0 8px; margin-bottom: 6px;
+          border-bottom: 1px solid var(--grid); font-size: 13px; }
+.legend span { margin-right: 14px; white-space: nowrap; }
+.sw { display: inline-block; width: 18px; height: 3px; vertical-align: middle; margin-right: 5px; border-radius: 2px; }
+.sw.dot { width: 7px; height: 7px; border-radius: 50%; }
+.sw.cyan { background: var(--cyan); } .sw.pink { background: var(--pink); } .sw.green { background: var(--green); }
+.sw.orange { background: var(--orange); } .sw.white { background: var(--white); }
+
+.controls { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; margin: 8px 0; font-size: 14px; }
+.controls label { display: flex; gap: 8px; align-items: center; }
+input[type=range] { width: 200px; accent-color: var(--cyan); }
+select, button { background: var(--bg); color: var(--text); border: 1px solid var(--grid); border-radius: 6px; padding: 4px 10px; font: inherit; }
+button { cursor: pointer; }
+button:hover { border-color: var(--cyan); }
+.val { color: var(--white); font-variant-numeric: tabular-nums; min-width: 64px; display: inline-block; }
+
+canvas { width: 100%; display: block; border-radius: 6px; margin: 4px 0 10px; }
+.h-a { height: 170px; } .h-b { height: 140px; } .h-c { height: 220px; }
+.panel-title { font-size: 13px; color: var(--muted); margin-top: 6px; }
+.msg { padding: 8px 10px; border-radius: 6px; font-size: 14px;
+       background: color-mix(in srgb, var(--cyan) 8%, transparent);
+       border: 1px solid color-mix(in srgb, var(--cyan) 25%, transparent); }
+.stats { font-size: 13px; font-variant-numeric: tabular-nums; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 720px) { .two { grid-template-columns: 1fr; } }

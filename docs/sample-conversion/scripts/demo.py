@@ -2,6 +2,7 @@
 without dither, and a Monte Carlo check of E[nu|z]=0 and E[nu^2|z]=q^2/4.
 Run: uv run --with numpy --with matplotlib demo.py
 """
+import json
 import os
 import numpy as np
 import matplotlib
@@ -12,8 +13,12 @@ OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "figures")
 os.makedirs(OUT, exist_ok=True)
 rng = np.random.default_rng(1)
 
-BG, GRID, TEXT = "#0b0f1a", "#1c2438", "#d6e2ff"
-CYAN, PINK, GREEN, ORANGE, WHITE = "#00e5ff", "#ff2e97", "#39ff88", "#ffb02e", "#ffffff"
+# Shared glow palette, also used by the web simulations (docs/assets/glow/).
+PALETTE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "assets", "glow", "palette.json")
+with open(PALETTE, encoding="utf-8") as fh:
+    PAL = json.load(fh)
+BG, GRID, TEXT = PAL["bg"], PAL["grid"], PAL["text"]
+CYAN, PINK, GREEN, ORANGE, WHITE = PAL["cyan"], PAL["pink"], PAL["green"], PAL["orange"], PAL["white"]
 
 plt.rcParams.update({
     "figure.facecolor": BG, "axes.facecolor": BG, "savefig.facecolor": BG,
