@@ -151,6 +151,17 @@ This document states WHAT the Core Wrapper does. HOW it does it (API shape, thre
 6. THE build SHALL find system headers with `pkg-config` (no hard-coded install paths) and SHALL build in CI on `ubuntu-latest` and `macos-latest`. Build dependencies on Debian/Ubuntu SHALL be documented (expected: `libsdl2-dev` headers only, `libasound2-dev`, `pkg-config`).
 7. Test: in CI, `pt2-play --wav` of a reference MOD SHALL produce output bit-identical to a render on the same platform (Req 5.4), and the onset test of Req 5.2 SHALL pass.
 
+### Requirement 12 – Working State in RAM
+**User Story:** As a Host Client developer, I want generated and edited music to live in memory, so that agent iterations, previews and undo do not write files.  
+**Priority:** Must · **Source:** Owner decision, 2026-11-17
+
+#### Acceptance Criteria
+1. THE Core Wrapper SHALL keep the active module, pattern edits, generated proposals and undo history in memory. No operation other than an explicit save, export or autosave SHALL write to disk. Test: run a scripted session of 100 generations and edits with file-system writes monitored; zero files are created.
+2. WHEN a Host Client loads a module from a byte buffer THE Core Wrapper SHALL parse it without touching the file system (upstream `loadMod31(buffer, size)` already does this).
+3. WHEN a Host Client requests the module as bytes THE Core Wrapper SHALL return a `.mod` image in memory. Saving to a file SHALL be this image written by the Host Client or a thin file helper.
+4. Test oracle: the in-memory image SHALL be byte-identical to the file written by upstream `modSave()` for the same module state. (Design note: upstream `modSave()` only writes through `fopen`; the oracle may redirect it to memory with `open_memstream` in the bridge, on macOS and Linux, without editing `src/`.)
+5. WHERE autosave is enabled THE Core Wrapper SHALL write at most once per configured interval and only when state changed. **USER DECISION (proposed default: autosave off).**
+
 ---
 
 ## Walking Skeleton Slice

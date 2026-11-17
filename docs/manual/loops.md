@@ -118,6 +118,30 @@ A loop drawn left to right in a step sequencer (ABL-4, UX horizontal view) is sa
 | A pattern that is only 1 bar long | `D00` on row 15 |
 | Loop forever | the pattern in the order list, `Bxx` back to it |
 
+## From a pad press to E60
+
+There is no export step. The step sequencer (GUI or Push 2) is only a view of the pattern in RAM. Every pad press writes a cell at once, and the next render call plays it.
+
+```mermaid
+sequenceDiagram
+    participant P as Push 2 pad / GUI box
+    participant S as Step view (lane, step)
+    participant M as Mapping (channel plan)
+    participant C as Core Wrapper (pattern in RAM)
+    P->>S: press lane "kick", step 7
+    S->>M: (lane=kick, step=7, velocity=96)
+    M->>C: set cell: row 6, channel 1, C-2, sample 1, C30
+    P->>S: mark steps 1–16 as loop ×4
+    S->>M: loop(1..16, 4)
+    M->>C: row 0: E60, row 15: E63 (reserved effect channel)
+```
+
+- Lane → channel and sample, from the channel plan.
+- Step → row: at 4 rows per beat, steps 1–16 are rows 0–15.
+- Loop → `E60` at the start row, `E6x` at the end row with x = repeats − 1.
+- A cell holds one effect. Velocity (`Cxx`) and loop commands compete for it, so one channel's effect column is reserved for loop and tempo commands.
+- Reading works the other way too: `E60`/`E6x` in a loaded `.mod` shows up as a loop marker in the step view.
+
 # PITFALLS
 
 - `E6x` on two channels at once: the jumps interfere. The Validator (APG-19) rejects it.
