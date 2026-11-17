@@ -2,6 +2,10 @@
 
 **Status:** Draft for owner review (2026-11-17).
 
+**Owner decision (2026-11-17), phasing:**
+- **Phase A (first):** our app talks to Push 2 directly, without Live: MIDI User port (pads, encoders, LEDs) and the USB display (tracker view, ABL-4). In scope now: ABL-3, ABL-4, ABL-6, ABL-7.
+- **Phase B (later or never):** integration through Live and Max for Live: ABL-1, ABL-2, ABL-5, ABL-8. These keep their text but are deferred. Their priorities apply only if Phase B is started.
+
 ## Introduction
 This spec lets the owner use `protracker2-agent-assist` from inside **Ableton Live**: through a **Max for Live** device, and with an **Ableton Push 2** controller as a step sequencer and display. Live is a Host Client of the Core Wrapper ([`libpt2-core-wrapper`](../libpt2-core-wrapper/requirements.md)) and of the pattern generator ([`agent-pattern-generator`](../agent-pattern-generator/requirements.md)).
 
@@ -80,6 +84,14 @@ This document states WHAT the integration does. Whether the device links the C b
 **USER DECISION (proposed default: macOS, Ableton Live 12 Suite, Max for Live included, Push 2 over USB; to be verified against the owner's setup).**
 
 1. THE integration SHALL be tested on the owner's platform before release, with a written manual test script (prompt → clip → play; Push step edit → audible change).
+
+## Requirement ABL-8 – Running Next to Live
+**Priority:** Must
+Facts from the [Push 2 MIDI and Display Interface Manual](https://github.com/Ableton/push-interface/blob/main/doc/AbletonPush2MIDIDisplayInterface.asc): Push 2 is a USB composite device with two MIDI ports (Live port and User port) and a libusb bulk display interface. External apps may run in parallel to Live. Live releases the User port when Track/Sync/Remote for port 2 are off.
+
+1. THE app SHALL use the Push 2 User port and SHALL switch Push 2 to User mode (sysex `F0 00 21 1D 01 01 0A 01 F7`) when the user presses the User button, and back on the next press.
+2. THE app SHALL sync tempo and bar phase with Live through Ableton Link (UX-22) and SHALL send notes or clips to Live through a virtual CoreMIDI port (IAC Driver).
+3. **Spike before design:** verify on the owner's M4 whether the app can open the Push 2 display interface while Live is running. IF it cannot THEN the tracker view (ABL-4) SHALL be shown on the Push 2 display only while Live is closed, and in the app window otherwise. Status: open.
 
 ## Out of Scope
 - Other DAWs and controllers (Logic, Bitwig, Launchpad).

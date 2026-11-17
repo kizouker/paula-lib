@@ -128,6 +128,8 @@ Pass values marked PROPOSED are defaults for user decision, not sourced.
 | UX-18 | Should | THE GUI SHALL show a help overlay listing all keys. Pass: every bound key appears. |
 | UX-19 | Should | WHEN a Copilot result is invalid per Req 7.1 THE GUI SHALL report "no cells applied" and leave the grid unchanged. Pass: module equal before/after. |
 | UX-20 | Should | THE GUI SHALL keep input-to-screen response within the NFR target once it exists (D8). Pass: target and method set by the user. |
+| UX-21 | Should | WHEN the user taps the tap-tempo key (`T`, or Push 2 Tap Tempo) at least 4 times THE GUI SHALL compute BPM as 60 / mean interval of the last 4–8 taps, round it to the nearest representable tempo (APG-2.1), and show both values (for example "91.3 → 91"). WHEN no tap arrives for 2 s THE GUI SHALL reset the tap count. Pass: synthetic taps at 0.6667 s intervals give 90. |
+| UX-22 | Should | WHERE Ableton Link is enabled THE GUI SHALL join the Link session on the local network, follow the session tempo and bar phase, and send its own tempo changes to the session. Pass: with a second Link peer at 92 BPM, the GUI shows 92 within 1 s and row 0 of a pattern starts within ±10 ms of the peer's bar start. Link SHALL be off by default. |
 
 ## 7. USER DECISIONS (proposed default) and conflicts
 

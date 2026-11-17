@@ -138,6 +138,21 @@ This document states WHAT the Core Wrapper does. HOW it does it (API shape, thre
 
 ---
 
+### Requirement 11 – Headless Command-Line Player on Linux
+**User Story:** As the owner, I want to play and render a MOD from a terminal on Linux with no window, so that the engine runs on servers, in containers and over SSH.  
+**Priority:** Must (milestone 1, before the TUI and Push 2) · **Source:** Owner, 2026-11-17
+
+#### Acceptance Criteria
+1. WHEN the user runs `pt2-play <file.mod>` on Linux (x86_64 and arm64) or macOS THE player SHALL load the module (Req 4.3a) and play it to the default audio output, without creating a window or linking SDL.
+2. WHEN the user passes `--wav <out.wav>` THE player SHALL render the song to a 16-bit stereo WAV file (Req 5.1) and SHALL NOT open an audio device. This mode SHALL work on a machine with no sound card.
+3. WHEN the user passes `--raw` THE player SHALL write raw 16-bit little-endian stereo PCM to stdout, so that it can be piped (for example `| aplay -f S16_LE -c2 -r44100`).
+4. WHILE playing THE player SHALL print one status line (song position, row, BPM, speed) and SHALL stop on `q` or Ctrl-C, releasing the audio device.
+5. IF the file is missing, corrupt or not a MOD THEN THE player SHALL print the Req 9 message and exit with a non-zero exit code. On success the exit code SHALL be 0.
+6. THE build SHALL find system headers with `pkg-config` (no hard-coded install paths) and SHALL build in CI on `ubuntu-latest` and `macos-latest`. Build dependencies on Debian/Ubuntu SHALL be documented (expected: `libsdl2-dev` headers only, `libasound2-dev`, `pkg-config`).
+7. Test: in CI, `pt2-play --wav` of a reference MOD SHALL produce output bit-identical to a render on the same platform (Req 5.4), and the onset test of Req 5.2 SHALL pass.
+
+---
+
 ## Walking Skeleton Slice
 The walking skeleton requires **Requirements 1, 3, 4, 5, 6, 9 and 10**: initialize the Core Wrapper headlessly, load a starter sample, set BPM, write a basic pattern, and render/verify non-silent audio from a C test client using the C bindings.
 

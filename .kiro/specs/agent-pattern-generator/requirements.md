@@ -241,6 +241,15 @@ This document states WHAT the generator does. Prompting, model choice and data f
 1. WHEN a pattern is written THE Generator SHALL set channel volumes so the rendered 4-channel mix peaks at or below −1 dBFS, and SHALL log the volumes.
 2. WHEN a Host Client requests stems THE Core Wrapper SHALL render each channel to its own WAV, and the mix SHALL equal their sum within ±1 LSB. (Needs a new Core Wrapper requirement.)
 
+## Requirement APG-23 – Style Sources and Online BPM Lookup
+**Priority:** Should
+
+1. Every Style Profile SHALL list `sources: [REF-xx]` pointing to entries in `docs/references/styles.md`. Each entry SHALL record author, title, year, publisher or URL, access date and the claim it supports.
+2. A value SHALL be `verified: true` only when it has at least one credible source (book, paper, musician or dance-teacher sign-off) or the owner has measured it with tap tempo (UX-21) on a recording he owns.
+3. WHERE online BPM lookup is enabled THE Generator SHALL query a BPM service (candidate: GetSongBPM API) for named example tracks, SHALL store each result as a source with the service name and access date, and SHALL NOT mark the value verified from that alone.
+4. THE lookup SHALL follow the service's terms (for example a required attribution link) and SHALL keep API keys in a `.env` file, never in code or logs.
+5. IF the service is unreachable THEN the Generator SHALL keep working with the stored profile values.
+
 ## Requirement APG-22 – Effects: Reverb, Compressor, Filters, Flanger
 **Priority:** Could (in-pattern), Should (baked into samples). Real-time DSP is a separate future spec (vision roadmap step 6).
 
