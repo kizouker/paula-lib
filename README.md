@@ -1,6 +1,8 @@
 # protracker2-agent-assist
 
-An agent-assisted ProTracker 2. You describe a beat, a bassline or a harmonic twist in plain language, and the agent writes editable tracker patterns back into the grid. Sound comes from the authentic Amiga Paula engine of [`8bitbubsy/pt2-clone`](https://github.com/8bitbubsy/pt2-clone), which this repository is forked from.
+[![CI](https://github.com/kizouker/protracker2-agent-assist/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/kizouker/protracker2-agent-assist/actions/workflows/ci.yml)
+
+An agent-assisted ProTracker 2-style tracker, built on an open-source ProTracker 2 replayer (see [Credits](#credits-and-licence)). You describe a beat, a bassline or a harmonic twist in plain language, and the agent writes editable tracker patterns back into the grid.
 
 Built for the **Kiroween** hackathon (Resurrection track) with Kiro CLI and Kiro Crew.
 

@@ -2,7 +2,7 @@
 title: protracker2-agent-assist
 ---
 
-An agent-assisted ProTracker 2. Describe a beat or a bassline in plain language and get editable tracker patterns back, played by the Amiga Paula engine of [pt2-clone](https://github.com/8bitbubsy/pt2-clone).
+An agent-assisted ProTracker 2-style tracker, built on an open-source ProTracker 2 replayer (see [Credits](#credits)). Describe a beat or a bassline in plain language and get editable tracker patterns back.
 
 ## Pages
 
@@ -14,3 +14,7 @@ An agent-assisted ProTracker 2. Describe a beat or a bassline in plain language 
 - [UX requirements](ux-requirements.html)
 
 Source: [github.com/kizouker/protracker2-agent-assist](https://github.com/kizouker/protracker2-agent-assist)
+
+## Credits
+
+The replayer is based on the ProTracker 2 clone by Olav "8bitbubsy" Sørensen ([pt2-clone](https://github.com/8bitbubsy/pt2-clone)), used under its BSD licence. See [LICENSE](https://github.com/kizouker/protracker2-agent-assist/blob/main/LICENSE). The starter samples are the author's own recordings.

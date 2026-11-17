@@ -4,7 +4,7 @@ on:
   push:
     branches: ["**"]
   pull_request:
-    branches: ["master", "main"]
+    branches: ["main"]
 
 jobs:
   build:
@@ -35,3 +35,46 @@ jobs:
 
       - name: Build
         run: cmake --build build --parallel
+
+  rust:
+    name: Rust tests (macos-latest)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            crates/pt2-dsp
+            crates/pt2-viz
+      - name: Test pt2-dsp
+        run: cargo test --locked
+        working-directory: crates/pt2-dsp
+      - name: Test pt2-viz
+        run: cargo test --locked
+        working-directory: crates/pt2-viz
+
+  wasm:
+    name: Wasm build (ubuntu-latest)
+    runs-on: ubuntu-latest
+    # Non-blocking, like the Ubuntu C build (PT2AA-NFR-001).
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: crates/pt2-viz
+      - name: Cache wasm-bindgen-cli
+        id: wbg
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/wasm-bindgen
+          key: wasm-bindgen-cli-0.2.130
+      - name: Install wasm-bindgen-cli (version must match Cargo.lock)
+        if: steps.wbg.outputs.cache-hit != 'true'
+        run: cargo install wasm-bindgen-cli --version 0.2.130 --locked
+      - name: Build wasm
+        run: bash crates/pt2-viz/build-web.sh
