@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="230" viewBox="0 0 900 230" role="img" aria-label="Project status">
+  <defs><filter id="g" x="-20%" y="-60%" width="140%" height="220%"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <rect width="900" height="230" rx="12" fill="#10172a"/>
+  <g font-family="Menlo, Consolas, monospace" font-size="17">
+    <text x="30" y="48" fill="#d6e2ff">Tracker builds and plays on macOS (SDL2)</text>
+    <rect x="640" y="30" width="230" height="10" rx="5" fill="#1c2438"/><rect x="640" y="30" width="230" height="10" rx="5" fill="#39ff88" filter="url(#g)"/>
+    <text x="640" y="62" font-size="13" fill="#39ff88">DONE</text>
+
+    <text x="30" y="98" fill="#d6e2ff">Requirements, UX and NFR</text>
+    <rect x="640" y="80" width="230" height="10" rx="5" fill="#1c2438"/><rect x="640" y="80" width="230" height="10" rx="5" fill="#00e5ff" filter="url(#g)"/>
+    <text x="640" y="112" font-size="13" fill="#00e5ff">REVIEWED</text>
+
+    <text x="30" y="148" fill="#d6e2ff">Headless engine POC from Rust</text>
+    <rect x="640" y="130" width="230" height="10" rx="5" fill="#1c2438"/><rect x="640" y="130" width="150" height="10" rx="5" fill="#ffb02e" filter="url(#g)"/>
+    <text x="640" y="162" font-size="13" fill="#ffb02e">WORKS LOCALLY · NOT MERGED</text>
+
+    <text x="30" y="198" fill="#d6e2ff">Starter kit (kick, bass · snare, hi-hat, piano)</text>
+    <rect x="640" y="180" width="230" height="10" rx="5" fill="#1c2438"/><rect x="640" y="180" width="92" height="10" rx="5" fill="#ff2e97" filter="url(#g)"/>
+    <text x="640" y="212" font-size="13" fill="#ff2e97">2 OF 5 SAMPLES</text>
+  </g>
+</svg>
