@@ -45,3 +45,19 @@
 
 /* MathJax display equations: scroll instead of overflowing on narrow screens. */
 mjx-container[display="true"] { overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+
+/* Page depth: a soft glow behind the content and a raised header. */
+body { background: radial-gradient(1200px 600px at 50% -10%, color-mix(in srgb, var(--cyan) 10%, transparent), transparent 70%), var(--bg); }
+.site-header { box-shadow: 0 2px 18px color-mix(in srgb, var(--cyan) 10%, transparent); }
+
+/* Home page hero and explore cards. */
+.prose img.hero { border: 0; box-shadow: 0 0 40px color-mix(in srgb, var(--cyan) 18%, transparent); margin: 8px 0 20px; }
+.explore { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 16px 0 8px; }
+@media (max-width: 760px) { .explore { grid-template-columns: 1fr; } }
+.explore a { display: block; background: var(--card); border: 1px solid var(--grid); border-radius: 10px; padding: 12px;
+             color: var(--text); text-decoration: none; transition: border-color .15s, box-shadow .15s; }
+.explore a:hover, .explore a:focus-visible { border-color: var(--cyan); box-shadow: 0 0 22px color-mix(in srgb, var(--cyan) 30%, transparent); }
+.explore img { margin: 0 0 10px; border: 0; box-shadow: none; }
+.explore strong { display: block; color: var(--cyan); margin-bottom: 4px; }
+.explore span { color: var(--muted); font-size: 14px; }
+@media (prefers-reduced-motion: reduce) { .explore a { transition: none; } }

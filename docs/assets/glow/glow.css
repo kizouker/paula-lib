@@ -2,7 +2,7 @@
    writes each entry as a CSS variable (--bg, --cyan, ...). The values below
    are only fallbacks for the moment before the palette has loaded. */
 :root {
-  --bg: #0b0f1a; --card: #10172a; --grid: #1c2438; --text: #d6e2ff; --muted: #8796b8;
+  --bg: #141b2e; --card: #1b2440; --grid: #2a3554; --text: #d6e2ff; --muted: #8f9ec0;
   --cyan: #00e5ff; --pink: #ff2e97; --green: #39ff88; --orange: #ffb02e; --white: #ffffff;
 }
 * { box-sizing: border-box; }
