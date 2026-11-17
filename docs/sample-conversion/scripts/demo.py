@@ -34,9 +34,10 @@ def glow(ax, x, y, color, lw=1.6, step=False, **kw):
     draw = ax.step if step else ax.plot
     if step:
         kw.setdefault("where", "mid")
+    label = kw.pop("label", None)  # only the sharp core goes in the legend
     for w, a in ((9, 0.05), (6, 0.08), (3.5, 0.14)):
         draw(x, y, color=color, lw=lw + w, alpha=a, solid_capstyle="round", **kw)
-    draw(x, y, color=color, lw=lw, **kw)
+    draw(x, y, color=color, lw=lw, label=label, **kw)
 
 
 def glow_pts(ax, x, y, color, label=None):
