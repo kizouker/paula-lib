@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="240" viewBox="0 0 900 240" role="img" aria-label="protracker2-agent-assist">
+  <defs>
+    <filter id="glow" x="-20%" y="-50%" width="140%" height="200%">
+      <feGaussianBlur stdDeviation="5" result="b1"/>
+      <feGaussianBlur stdDeviation="12" in="SourceGraphic" result="b2"/>
+      <feMerge><feMergeNode in="b2"/><feMergeNode in="b1"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="soft" x="-20%" y="-50%" width="140%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0b0f1a" stop-opacity="0"/>
+      <stop offset="1" stop-color="#0b0f1a" stop-opacity="0.9"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="240" rx="14" fill="#0b0f1a"/>
+  <rect x="0.5" y="0.5" width="899" height="239" rx="14" fill="none" stroke="#1c2438"/>
+
+  <!-- tracker grid: rows with note, instrument, effect columns -->
+  <g font-family="Menlo, Consolas, monospace" font-size="13" fill="#1c2438">
+    <text x="30" y="40">00  C-2 01 C00</text>
+    <text x="30" y="62">01  --- -- 000</text>
+    <text x="30" y="84">02  E-2 04 000</text>
+    <text x="30" y="106">03  --- -- 000</text>
+    <text x="30" y="128">04  C-2 01 000</text>
+    <text x="30" y="150">05  --- -- 000</text>
+    <text x="30" y="172">06  G-2 04 A04</text>
+    <text x="30" y="194">07  --- -- 000</text>
+    <text x="700" y="40">08  C-2 01 000</text>
+    <text x="700" y="62">09  --- -- 000</text>
+    <text x="700" y="84">0A  A-2 04 000</text>
+    <text x="700" y="106">0B  --- -- 000</text>
+    <text x="700" y="128">0C  C-2 01 000</text>
+    <text x="700" y="150">0D  --- -- 000</text>
+    <text x="700" y="172">0E  E-2 04 000</text>
+    <text x="700" y="194">0F  --- -- 000</text>
+  </g>
+
+  <!-- waveform -->
+  <path d="M0 200 Q 60 150 120 200 T 240 200 T 360 200 T 480 200 T 600 200 T 720 200 T 840 200 T 960 200"
+        fill="none" stroke="#39ff88" stroke-width="2.5" opacity="0.9" filter="url(#soft)"/>
+  <path d="M0 212 Q 60 232 120 212 T 240 212 T 360 212 T 480 212 T 600 212 T 720 212 T 840 212 T 960 212"
+        fill="none" stroke="#ff2e97" stroke-width="2" opacity="0.8" filter="url(#soft)"/>
+
+  <!-- title -->
+  <g font-family="Menlo, Consolas, monospace" text-anchor="middle">
+    <text x="450" y="105" font-size="44" font-weight="700" fill="#00e5ff" filter="url(#glow)">protracker2-agent-assist</text>
+    <text x="450" y="142" font-size="17" fill="#d6e2ff" filter="url(#soft)">describe a beat. get editable tracker patterns.</text>
+    <text x="450" y="168" font-size="13" fill="#ffb02e" filter="url(#soft)">Kiroween 2026 · Resurrection track</text>
+  </g>
+  <rect y="190" width="900" height="50" fill="url(#fade)" rx="14"/>
+</svg>
