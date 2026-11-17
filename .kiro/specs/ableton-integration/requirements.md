@@ -93,6 +93,35 @@ Facts from the [Push 2 MIDI and Display Interface Manual](https://github.com/Abl
 2. THE app SHALL sync tempo and bar phase with Live through Ableton Link (UX-22) and SHALL send notes or clips to Live through a virtual CoreMIDI port (IAC Driver).
 3. **Spike before design:** verify on the owner's M4 whether the app can open the Push 2 display interface while Live is running. IF it cannot THEN the tracker view (ABL-4) SHALL be shown on the Push 2 display only while Live is closed, and in the app window otherwise. Status: open.
 
+## Requirement ABL-9 – MIDI Log in Plain Text
+**User Story:** As the owner, I want to see every MIDI message in plain text, so that I can learn the protocol and debug Push 2, synths and network MIDI.
+**Priority:** Must (Phase A) · **Issue:** #19
+
+1. WHERE the MIDI log is enabled THE app SHALL write one line per MIDI message sent or received, with: local time (ms), direction (IN/OUT), port name, raw bytes in hex, and a decoded meaning (for example `90 24 64  pad 36 (bottom-left) pressed, velocity 100`; `F0 00 21 1D 01 01 0A 01 F7  sysex: Set MIDI Mode = User`).
+2. THE log SHALL be available in these views: terminal (`--midi-log`), a TUI panel, a file, and a web page served on 127.0.0.1 only.
+3. THE web page SHALL use the same dark glow style as the localhost_for_agents dashboard, update live (SSE or WebSocket), and offer filter by port, direction and message type, plus pause.
+4. Push 2 display traffic SHALL be logged as one summary line per frame (frame number, bytes), never as raw pixel data.
+5. WHERE NATS publishing is enabled THE app SHALL publish each log line on the subject `midi.log.<host>`, so the localhost_for_agents dashboard can show logs from several machines. Off by default. Network MIDI captured with `tshark` (RTP-MIDI) MAY be added to the same subject (see #17).
+6. Logging SHALL NOT run on the audio thread and SHALL NOT delay MIDI output. Test: with logging on, MIDI out timing stays within the #18 target.
+7. Test: a recorded MIDI stream replayed through the logger produces the expected text lines (golden file).
+
+## Walking Skeleton (Phase A, owner-approved 2026-11-18)
+The thinnest slice through every layer, without features:
+1. The CLI player loads a `.mod` from a file into RAM and plays it through the Core Wrapper to the sound card.
+2. The Push 2 display shows 8 rows of the tracker view and scrolls with the play position.
+3. Pressing one pad writes a kick on the current row, and it is heard on the next loop.
+4. The MIDI log (ABL-9) shows the pad press and the LED reply in plain text.
+
+Proof: file → engine → audio → USB display → pad input → log works end to end.
+
+## MVP (Phase A, owner-approved 2026-11-18)
+The smallest product with real value, built on the walking skeleton:
+1. Encoders scroll rows and change cell fields within valid ranges (ABL-4.2–4.4).
+2. Switch between vertical (tracker) and horizontal (step sequencer) orientation (ABL-4.10).
+3. Mark a step range as a loop, written as `E60`/`E6x` (ABL-4.11).
+4. Save the module as `.mod` from RAM (Req 12).
+5. MIDI log as a local web page (ABL-9.3).
+
 ## Out of Scope
 - Other DAWs and controllers (Logic, Bitwig, Launchpad).
 - Live's own Push 2 drum and note modes; this spec adds a mode, it does not replace them.
