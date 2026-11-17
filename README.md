@@ -15,22 +15,17 @@ Built for the **Kiroween** hackathon (Resurrection track) with Kiro CLI and Kiro
 
 **Website:** [kizouker.github.io/protracker2-agent-assist](https://kizouker.github.io/protracker2-agent-assist/)
 
-## Goals
+<img src="docs/assets/readme/h-goals.svg" alt="Goals" width="100%">
 
 - **Creative co-pilot, not a jukebox.** The agent produces pattern data you can edit, never flat audio renders or copies of existing songs.
 - **Clean core library (`libpt2`).** The `pt2-clone` audio, replayer and module I/O sit behind a small library boundary, wrapped from Rust, so upstream fixes stay easy to pull.
 - **Own starter sample kit.** A small 8-bit kit (kick, snare, hi-hat, bass, piano) recorded by the author, so pattern generation works out of the box.
 
-## Status
+<img src="docs/assets/readme/h-status.svg" alt="Status" width="100%">
 
-| Area | State |
-|---|---|
-| `pt2-clone` builds and plays on macOS (SDL2) | Done |
-| Requirements, UX requirements, non-functional requirements | Reviewed |
-| Headless engine proof of concept from Rust | Works locally, not merged |
-| Starter kit | Kick and bass in place; snare, hi-hat and piano missing |
+<img src="docs/assets/readme/status.svg" alt="Status: tracker builds on macOS (done); requirements reviewed; headless engine POC works locally, not merged; starter kit has kick and bass, snare, hi-hat and piano missing" width="100%">
 
-## 8-bit sample conversion
+<img src="docs/assets/readme/h-conversion.svg" alt="8-bit sample conversion" width="100%">
 
 ProTracker plays 8-bit mono samples, and 8363 Hz is the rate that plays back at the note C-2. Modern recordings (24-bit, 48 kHz, often stereo) are converted in four steps:
 
@@ -49,7 +44,7 @@ What is lost: everything above about 4 kHz, some attack sharpness, and the noise
 
 The full derivation, with formulas and figures, is on the [sample conversion page](https://kizouker.github.io/protracker2-agent-assist/sample-conversion/). Sources: [`docs/sample-conversion/`](docs/sample-conversion/).
 
-## Repository layout
+<img src="docs/assets/readme/h-layout.svg" alt="Repository layout" width="100%">
 
 | Path | Contents |
 |---|---|
@@ -59,17 +54,18 @@ The full derivation, with formulas and figures, is on the [sample conversion pag
 | `assets/starter-kit/` | Starter samples and their provenance |
 | `docs/upstream/pt2-clone-README.md` | The original `pt2-clone` README: releases, keybindings, compiling |
 
-## Planning and specs
+<img src="docs/assets/readme/h-specs.svg" alt="Planning and specs" width="100%">
 
 - [Vision](docs/vision.md)
 - [Non-functional requirements](docs/non-functional-requirements.md)
 - [UX requirements](docs/ux-requirements.md)
 - [To-do list](docs/todo.md)
 
-## Building
+<img src="docs/assets/readme/h-building.svg" alt="Building" width="100%">
 
 Building the tracker is unchanged from upstream. See [`HOW-TO-COMPILE.txt`](HOW-TO-COMPILE.txt) and the [original README](docs/upstream/pt2-clone-README.md).
 
-## Credits and licence
+<a id="credits-and-licence"></a>
+<img src="docs/assets/readme/h-credits.svg" alt="Credits and licence" width="100%">
 
 ProTracker 2 clone by Olav "8bitbubsy" Sørensen: [`8bitbubsy/pt2-clone`](https://github.com/8bitbubsy/pt2-clone). See [`LICENSE`](LICENSE) and [`LICENSES.txt`](LICENSES.txt). The starter samples are the author's own recordings; see [`assets/starter-kit/PROVENANCE.md`](assets/starter-kit/PROVENANCE.md).
