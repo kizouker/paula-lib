@@ -55,6 +55,32 @@ jobs:
       # compiles on rustc 1.100.0 (E0277 in ivar_forwarding_impls.rs) and
       # cannot be fixed with `cargo update`. The wasm job builds pt2-viz.
 
+  paula:
+    name: paula tests (${{ matrix.os }})
+    # Headless API, paula-play and paula-tui (issue #22). Not a required check yet.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install SDL2 headers and ALSA (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsdl2-dev libasound2-dev pkg-config
+      - name: Install SDL2 headers (macOS)
+        if: runner.os == 'macOS'
+        run: brew install sdl2 pkg-config
+      - uses: dtolnay/rust-toolchain@1.100.0
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: paula
+      - name: Test paula (no audio device needed)
+        run: cargo test --locked
+        working-directory: paula
+
   wasm:
     name: Wasm build (ubuntu-latest)
     runs-on: ubuntu-latest
