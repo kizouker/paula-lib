@@ -47,17 +47,42 @@ impl fmt::Display for ParseError {
 impl std::error::Error for ParseError {}
 
 /// Cut the JSON out of an answer that may be wrapped in a code fence or a sentence.
+/// Find the JSON in a model answer. Order: the first fenced code block that parses, then the
+/// first `[`/`{` position whose span up to the last matching closer parses (so prose such as
+/// "Here is [the pattern]:" before the JSON does not break it), then the whole text.
 fn extract_json(text: &str) -> &str {
     let t = text.trim();
-    let (open, close) = match (t.find('['), t.find('{')) {
-        (Some(a), Some(b)) if b < a => ('{', '}'),
-        (None, Some(_)) => ('{', '}'),
-        _ => ('[', ']'),
-    };
-    match (t.find(open), t.rfind(close)) {
-        (Some(a), Some(b)) if a < b => &t[a..=b],
-        _ => t,
+    let parses = |s: &str| serde_json::from_str::<Value>(s).is_ok();
+
+    let mut rest = t;
+    while let Some(start) = rest.find("```") {
+        let after = &rest[start + 3..];
+        let body_start = after.find('\n').map(|i| i + 1).unwrap_or(0); // skip "json" etc.
+        let Some(end) = after[body_start..].find("```") else { break };
+        let body = after[body_start..body_start + end].trim();
+        if parses(body) {
+            return body;
+        }
+        rest = &after[body_start + end + 3..];
     }
+
+    // Read one JSON value starting at each opener; the stream reader stops at the end of that
+    // value, so text after the JSON is fine too. At most 64 openers are tried.
+    for (i, _) in t.char_indices().filter(|(_, c)| *c == '[' || *c == '{').take(64) {
+        let mut values = serde_json::Deserializer::from_str(&t[i..]).into_iter::<Value>();
+        // only accept something shaped like an answer, so "[1]" in prose is skipped
+        if let Some(Ok(v)) = values.next() {
+            let looks_like_cells = match &v {
+                Value::Array(a) => a.is_empty() || a[0].is_object(),
+                Value::Object(o) => o.contains_key("cells") || o.contains_key("row"),
+                _ => false,
+            };
+            if looks_like_cells {
+                return &t[i..i + values.byte_offset()];
+            }
+        }
+    }
+    t
 }
 
 fn int(v: &Value, key: &str) -> Result<i64, Problem> {

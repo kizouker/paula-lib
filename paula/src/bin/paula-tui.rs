@@ -198,6 +198,9 @@ fn event_loop(terminal: &mut DefaultTerminal, app: &mut App) -> Result<(), Strin
 fn open_prompt(app: &mut App) {
     if app.job.is_some() {
         app.status = "still waiting for the model".into();
+    } else if app.session.proposal().is_some() {
+        // a new answer would silently replace the one on screen
+        app.status = "a proposal is waiting: a accepts it, r rejects it; then p asks again".into();
     } else if !cfg!(feature = "llm") {
         app.status = "this build has no `llm` feature".into();
     } else if !key_present() {
@@ -434,7 +437,7 @@ fn draw_diesel(f: &mut Frame, app: &App, body: Rect) {
 }
 
 fn draw_footer(f: &mut Frame, app: &App, foot: Rect) {
-    let keys = "space play/stop · ↑↓ row · ←→ position · f follow · s view · d diesel · p ask model · a accept · r reject · u undo · q quit";
+    let keys = "space play/stop · ↑↓ row · PgUp/PgDn 16 rows · ←→ position · f follow · s view · d diesel · p ask model · a accept · r reject · u undo · q quit";
     let first = match &app.input {
         Some(t) => Line::from(vec![Span::styled("ask> ", Style::default().fg(PINK)), Span::raw(t.as_str()), Span::styled("▏", Style::default().fg(CYAN)), Span::styled("   Enter send · Esc cancel", Style::default().fg(DIM))]),
         None => Line::from(Span::styled(keys, Style::default().fg(DIM))),

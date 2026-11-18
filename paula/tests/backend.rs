@@ -72,6 +72,16 @@ fn json_in_a_code_fence_or_a_cells_object_is_accepted() {
     assert_eq!(parse_answer(&obj, &m).unwrap().len(), 2);
 }
 
+#[test]
+fn prose_with_brackets_before_the_json_is_skipped() {
+    // verifier nit on #40: "Here is [the pattern]:" used to break extraction
+    let m = module();
+    let answer = format!("Here is [the pattern] you asked for {{ish}}:\n{GOOD}\nEnjoy [it]!");
+    assert_eq!(parse_answer(&answer, &m).unwrap().len(), 2);
+    let fenced_after_prose = format!("Notes [x]:\n```\n{GOOD}\n```");
+    assert_eq!(parse_answer(&fenced_after_prose, &m).unwrap().len(), 2);
+}
+
 fn bad_cells(answer: &str) -> Vec<(usize, Problem)> {
     match parse_answer(answer, &module()) {
         Err(ParseError::Invalid(b)) => b.into_iter().map(|b| (b.index, b.problem)).collect(),

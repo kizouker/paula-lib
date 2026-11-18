@@ -11,7 +11,9 @@ use std::time::Duration;
 const URL: &str = "https://api.anthropic.com/v1/messages";
 const VERSION: &str = "2023-06-01";
 /// A full pattern is at most 256 cells of about 25 tokens each.
-const MAX_TOKENS: u32 = 8192;
+/// Sonnet-class models may think before they answer, and thinking counts toward this limit,
+/// so leave room above the ~6.4k tokens a full 4×64 pattern needs.
+const MAX_TOKENS: u32 = 16384;
 
 pub struct Anthropic {
     key: ApiKey,
