@@ -138,6 +138,36 @@ This document states WHAT the Core Wrapper does. HOW it does it (API shape, thre
 
 ---
 
+### Requirement 13 – Effect Glossary
+**User Story:** As a Host Client developer, I want readable names and meanings for every effect, so that a front end, the manual and generators show the same text.  
+**Priority:** Should · **Source:** Chat — UX-23 readable effect names (backend part, `scratch/ux-23-draft.md`)
+
+#### Acceptance Criteria
+1. THE Core Wrapper SHALL provide a glossary with exactly one entry for each effect command 0–D and F, and one entry for each sub-effect E0–EF.
+2. Each glossary entry SHALL contain: a code pattern, a short name, a one-sentence meaning, the meaning of the parameter, and one example.
+3. WHEN a Host Client asks for the text of a Pattern Cell that has an effect THE Core Wrapper SHALL return the short name with the parameter values filled in (for example `E63` gives `REPEAT x3`, `E60` gives `LOOP START`, `C20` gives `VOL 32`, `F06` gives `SPEED 6`, `F7D` gives `BPM 125`).
+4. WHEN a Pattern Cell has effect command 0 and parameter 00, or an effect command above 15, THE Core Wrapper SHALL report that the cell has no effect text.
+5. The glossary SHALL be readable without starting the Audio Engine.
+
+---
+
+### Requirement 14 – Event Stream
+**User Story:** As a Host Client developer, I want to know what the player did while audio was rendered, so that a TUI, a controller display or a MIDI output can follow the song in time.  
+**Priority:** Should · **Source:** Chat — paula event stream (issue #25)
+
+#### Acceptance Criteria
+1. WHEN a Host Client renders frames WHILE playback is active THE Core Wrapper SHALL also return, in render order, the events that happened in those frames: row started (song position, pattern, row), note on (channel, sample number, period) and song end.
+2. Each event SHALL carry the frame offset within the rendered block at which it happened. WHEN a note-on event is compared with the sound onset of its note THE offsets SHALL differ by at most 10 ms.
+3. THE Core Wrapper SHALL return events to the Host Client by appending them to a Host Client-owned list during the render call, and SHALL NOT call back into Host Client code.
+4. WHEN a row starts THE Core Wrapper SHALL report the row-start event before the note-on events of that row, and SHALL report note-on events in channel order.
+5. WHEN a pattern cell has a note next to effect 3xx or 5xx (glide) THE Core Wrapper SHALL NOT report a note-on event for it.
+6. WHEN the song ends, by wrapping to an earlier position or by F00, THE Core Wrapper SHALL report exactly one song-end event and SHALL report no further events until playback is started again. A row jump back caused by a pattern loop (E6x) SHALL NOT count as song end.
+7. WHILE playback is stopped THE Core Wrapper SHALL return no events.
+8. WHEN the same module state and the same render calls are repeated THE Core Wrapper SHALL return the same events. WHEN the block size changes THE Core Wrapper SHALL return the same events in the same order, with frame offsets that differ by at most one slice (16 frames).
+9. THE command-line player SHALL offer an option that prints the event stream in plain text, one line per event, with the time in seconds.
+
+---
+
 ## Walking Skeleton Slice
 The walking skeleton requires **Requirements 1, 3, 4, 5, 6, 9 and 10**: initialize the Core Wrapper headlessly, load a starter sample, set BPM, write a basic pattern, and render/verify non-silent audio from a C test client using the C bindings.
 

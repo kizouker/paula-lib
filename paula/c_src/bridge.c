@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <math.h>
 
 /* ---- redirect SDL audio device so nothing real opens and no audio thread exists ---- */
 static SDL_AudioDeviceID paula_open(const char *d, int c, const SDL_AudioSpec *w, SDL_AudioSpec *h, int a)
@@ -53,12 +54,71 @@ void calcAudioLatencyVars(int32_t b, int32_t f) { (void)b; (void)f; }
 void setSyncTickTimeLen(uint32_t i, uint64_t f) { (void)i; (void)f; }
 void fillVisualsSyncBuffer(void) {}
 void resetChSyncQueue(void) {}
-void setVisualsDMACON(uint16_t b) { (void)b; }
-void setVisualsVolume(int32_t c, uint16_t v) { (void)c; (void)v; }
-void setVisualsPeriod(int32_t c, uint16_t p) { (void)c; (void)p; }
-void setVisualsLength(int32_t c, uint16_t l) { (void)c; (void)l; }
-void setVisualsDataPtr(int32_t c, const int8_t *s) { (void)c; (void)s; }
+/* ---- per-channel visuals state (spectrum analyser). The engine reports what Paula is doing
+** through the setVisuals* hooks, like pt2's own scopes use them: pointer/length given while DMA is
+** off or just before it starts are latched when DMACON turns the channel on; the pointer/length
+** set after that are the loop that takes over when the first pass ends. The hooks run inside
+** paula_render, on the caller's thread, under the Rust Mutex, so no extra locking is needed. ---- */
+#define PAULA_CHANNELS 4
+typedef struct
+{
+	const int8_t *cur, *pend; /* playing / next (loop) sample data */
+	int32_t curLen, pendLen;  /* words */
+	double pos;               /* bytes into cur */
+	int32_t period, volume, active;
+} paulaCh_t;
+static paulaCh_t pch[PAULA_CHANNELS];
 
+static void paula_clear_visuals(void) { memset(pch, 0, sizeof pch); }
+
+void setVisualsDMACON(uint16_t bits)
+{
+	for (int i = 0; i < PAULA_CHANNELS; i++)
+	{
+		if (!(bits & (1 << i))) continue;
+		if (bits & 0x8000)
+		{
+			pch[i].cur = pch[i].pend;
+			pch[i].curLen = pch[i].pendLen;
+			pch[i].pos = 0.0;
+			pch[i].active = pch[i].cur != NULL;
+		}
+		else
+			pch[i].active = 0;
+	}
+}
+void setVisualsVolume(int32_t c, uint16_t v) { if ((uint32_t)c < PAULA_CHANNELS) pch[c].volume = v > 64 ? 64 : v; }
+void setVisualsPeriod(int32_t c, uint16_t p) { if ((uint32_t)c < PAULA_CHANNELS) pch[c].period = p; }
+void setVisualsLength(int32_t c, uint16_t l) { if ((uint32_t)c < PAULA_CHANNELS) pch[c].pendLen = l; }
+void setVisualsDataPtr(int32_t c, const int8_t *s) { if ((uint32_t)c < PAULA_CHANNELS) pch[c].pend = s; }
+
+/* Paula reads one byte every `period` colour clocks (PAL 3546895 Hz): bytes per output frame */
+static double paula_step(const paulaCh_t *c)
+{
+	return c->period < 1 ? 0.0 : 3546895.0 / (double)c->period / (double)audio.outputRate;
+}
+
+static void paula_advance_visuals(int frames)
+{
+	for (int i = 0; i < PAULA_CHANNELS; i++)
+	{
+		paulaCh_t *c = &pch[i];
+		if (!c->active) continue;
+		c->pos += paula_step(c) * frames;
+		const double curBytes = c->curLen * 2.0;
+		if (c->pos >= curBytes)
+		{ /* first pass over: the loop data takes over */
+			c->pos -= curBytes;
+			c->cur = c->pend;
+			c->curLen = c->pendLen;
+			const double loopBytes = c->curLen * 2.0;
+			if (c->cur == NULL || loopBytes < 2.0) { c->active = 0; continue; }
+			c->pos = fmod(c->pos, loopBytes);
+		}
+	}
+}
+
+/* ---- the headless API (pull-style) ---- */
 /* ---- the headless API (pull-style) ---- */
 #define PAULA_MAX_SAMPLE_LEN 65534
 
@@ -103,6 +163,7 @@ static void paula_reset_audio_state(void)
 void paula_reset(void)
 {
 	modStop();
+	paula_clear_visuals();
 	for (int i = 0; i < MAX_PATTERNS; i++)
 		memset(song->patterns[i], 0, MOD_ROWS * sizeof (note_t) * PAULA_VOICES);
 	memset(song->sampleData, 0, (size_t)(MOD_SAMPLES + 2) * config.maxSampleLength);
@@ -150,6 +211,7 @@ void paula_get_cell(int pat, int row, int ch, int *period, int *sample, int *cmd
 	*period = n->period; *sample = n->sample; *cmd = n->command; *param = n->param;
 }
 
+int  paula_get_order(int pos) { return song->header.patternTable[pos & 127]; }
 void paula_set_order(int pos, int pat) { song->header.patternTable[pos & 127] = (uint16_t)pat; }
 void paula_set_song_length(int len) { song->header.songLength = (uint16_t)len; }
 int  paula_get_song_length(void) { return song->header.songLength; }
@@ -167,7 +229,7 @@ void paula_play(void)
 	editor.currMode = MODE_PLAY;
 }
 
-void paula_stop(void) { modStop(); editor.currMode = MODE_IDLE; }
+void paula_stop(void) { modStop(); editor.currMode = MODE_IDLE; paula_clear_visuals(); }
 int  paula_is_playing(void) { return editor.songPlaying ? 1 : 0; }
 int  paula_get_pos(void) { return song->currPos; }
 int  paula_get_row(void) { return song->currRow; }
@@ -176,5 +238,56 @@ int  paula_get_row(void) { return song->currRow; }
 void paula_render(int16_t *out, int frames)
 {
 	if (!editor.songPlaying) { memset(out, 0, (size_t)frames * 4); return; }
-	audioCallback(NULL, (Uint8 *)out, frames * 4);
+	/* small slices, so the channel positions stay close to the audio (a retrigger inside a slice
+	** is at most 32 frames off). Plain slicing: the audio is the same for any slice size. */
+	while (frames > 0)
+	{
+		const int n = frames > 32 ? 32 : frames;
+		audioCallback(NULL, (Uint8 *)out, n * 4);
+		paula_advance_visuals(n);
+		out += n * 2;
+		frames -= n;
+	}
+}
+
+/* State of channel ch (0..3): returns 1 when it is sounding. period 0 when idle, volume 0..64. */
+int paula_channel_state(int ch, int *period, int *volume)
+{
+	if (ch < 0 || ch >= PAULA_CHANNELS || !editor.songPlaying || !pch[ch].active) { *period = 0; *volume = 0; return 0; }
+	*period = pch[ch].period; *volume = pch[ch].volume;
+	return 1;
+}
+
+/* Rebuild the next n output frames of channel ch (raw, before the Amiga filters and the stereo
+** mix): sample data stepped at the channel period, linear interpolation, scaled by volume,
+** -1..1. Returns 0 (and zeros) when the channel is silent. Does not move the channel. */
+int paula_channel_signal(int ch, float *out, int n)
+{
+	memset(out, 0, (size_t)n * sizeof *out);
+	if (ch < 0 || ch >= PAULA_CHANNELS || !editor.songPlaying || !pch[ch].active || pch[ch].volume == 0) return 0;
+	const paulaCh_t *c = &pch[ch];
+	const double step = paula_step(c);
+	const float gain = (float)c->volume / 64.0f / 128.0f;
+	const int8_t *data = c->cur;
+	int32_t len = c->curLen * 2;
+	const int8_t *loop = c->pend;
+	const int32_t loopLen = c->pendLen * 2;
+	double pos = c->pos;
+	if (loopLen < 2 && loop != NULL) return 0;
+	for (int i = 0; i < n; i++, pos += step)
+	{
+		if (data == NULL || len < 2) break;
+		while (pos >= len)
+		{
+			pos -= len;
+			data = loop; len = loopLen;
+			if (data == NULL || len < 2) return 1;
+		}
+		const int32_t k = (int32_t)pos;
+		const float f = (float)(pos - k);
+		const float a = data[k];
+		const float b = (k + 1 < len) ? data[k + 1] : (loop != NULL && loopLen >= 2 ? loop[0] : a);
+		out[i] = (a + (b - a) * f) * gain;
+	}
+	return 1;
 }

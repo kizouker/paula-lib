@@ -2,16 +2,30 @@
 //!
 //! - [`modfile`]: parse and write MOD files in RAM.
 //! - [`engine`]: load a module, play, render PCM, edit cells (one engine per process).
+//! - [`events`]: row, note-on and song-end events reported while rendering.
+//! - [`glossary`]: readable names and meanings for every effect.
+//! - [`spectrum`]: per-channel spectrum bands, `Engine::channel_spectra`.
+//! - [`diesel`]: the Diesel mascot: SVG pixels, choreography data, dance frames, half-block rendering.
 //! - [`wav`]: write rendered PCM as WAV.
 
+pub mod diesel;
+#[cfg(feature = "tui")]
+pub mod diesel_view;
 pub mod engine;
+pub mod events;
+pub mod glossary;
 pub mod modfile;
 #[cfg(feature = "audio")]
 pub mod output;
+pub mod spectrum;
+#[cfg(feature = "tui")]
+pub mod spectrum_view;
 pub mod wav;
 
 pub use engine::{Engine, Error, LoadReport};
+pub use events::{Event, EventKind};
 pub use modfile::{Cell, Module, Sample};
+pub use spectrum::Spectra;
 
 /// Read a MOD from disk into RAM and parse it.
 pub fn read_module(path: &std::path::Path) -> Result<Module, Error> {
