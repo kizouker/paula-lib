@@ -6,6 +6,7 @@
 //! - [`glossary`]: readable names and meanings for every effect.
 //! - [`spectrum`]: per-channel spectrum bands, `Engine::channel_spectra`.
 //! - [`diesel`]: the Diesel mascot: SVG pixels, choreography data, dance frames, half-block rendering.
+//! - [`rules`], [`session`], [`llm`]: the backend frontends share: MOD rules, song + undo + proposals, and the LLM prompt/parse/repair/client.
 //! - [`wav`]: write rendered PCM as WAV.
 
 pub mod diesel;
@@ -14,9 +15,12 @@ pub mod diesel_view;
 pub mod engine;
 pub mod events;
 pub mod glossary;
+pub mod llm;
 pub mod modfile;
 #[cfg(feature = "audio")]
 pub mod output;
+pub mod rules;
+pub mod session;
 pub mod spectrum;
 #[cfg(feature = "tui")]
 pub mod spectrum_view;

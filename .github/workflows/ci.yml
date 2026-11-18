@@ -80,6 +80,9 @@ jobs:
       - name: Test paula (no audio device needed)
         run: cargo test --locked
         working-directory: paula
+      - name: Test paula without default features (no audio, tui or llm client)
+        run: cargo test --locked --no-default-features
+        working-directory: paula
 
   wasm:
     name: Wasm build (ubuntu-latest)

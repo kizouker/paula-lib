@@ -9,11 +9,17 @@
 //!                                       line instead of the status line (needs a terminal; ignored otherwise)
 //!   --diesel                            while playing to the speakers, show Diesel the mascot dancing above the
 //!                                       status line, redrawn in place (needs a terminal; ignored otherwise)
+//!   --compose "90 BPM 4/4 kick snare hihat" [--base song.mod] --save out.mod [--wav out.wav]
+//!                                       ask the model for one new pattern, append it to the base module
+//!                                       (an empty one without --base) and write the result to --save.
+//!                                       Needs ANTHROPIC_API_KEY (environment or .env). --save is the accept.
 //! Options: --seconds N (limit, default 600), --rate HZ (for --wav/--raw, default 44100).
 //! Exit codes: 0 ok, 2 usage, otherwise the Req 9 error code + 10.
 
 use paula::diesel::{self, Choreography, Dancer, Image};
 use paula::{engine, read_module, wav, Engine, Error, Event, EventKind, Spectra};
+#[cfg(feature = "llm")]
+use paula::{llm, session::Session, Module};
 use std::io::{IsTerminal, Write};
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -27,7 +33,12 @@ enum Mode {
 }
 
 struct Args {
-    file: PathBuf,
+    file: Option<PathBuf>,
+    compose: Option<String>,
+    #[cfg_attr(not(feature = "llm"), allow(dead_code))]
+    base: Option<PathBuf>,
+    #[cfg_attr(not(feature = "llm"), allow(dead_code))]
+    save: Option<PathBuf>,
     mode: Mode,
     seconds: f64,
     rate: u32,
@@ -36,16 +47,21 @@ struct Args {
     diesel: bool,
 }
 
-const USAGE: &str = "usage: paula-play <file.mod> [--wav <out.wav> | --raw] [--events] [--spectrum] [--diesel] [--seconds N] [--rate HZ]";
+const USAGE: &str = "usage: paula-play <file.mod> [--wav <out.wav> | --raw] [--events] [--spectrum] [--diesel] [--seconds N] [--rate HZ]
+       paula-play --compose <text> --save <out.mod> [--base <song.mod>] [--wav <out.wav>]";
 
 fn parse_args() -> Result<Args, String> {
     let mut it = std::env::args().skip(1);
     let (mut file, mut mode, mut seconds, mut rate) = (None, Mode::Play, 600.0, 44_100);
     let (mut events, mut spectrum, mut diesel) = (false, false, false);
+    let (mut compose, mut base, mut save) = (None, None, None);
     while let Some(a) = it.next() {
         match a.as_str() {
             "--wav" => mode = Mode::Wav(it.next().ok_or("--wav needs a file name")?.into()),
             "--raw" => mode = Mode::Raw,
+            "--compose" => compose = Some(it.next().ok_or("--compose needs a text")?),
+            "--base" => base = Some(PathBuf::from(it.next().ok_or("--base needs a file name")?)),
+            "--save" => save = Some(PathBuf::from(it.next().ok_or("--save needs a file name")?)),
             "--events" => events = true,
             "--spectrum" => spectrum = true,
             "--diesel" => diesel = true,
@@ -56,11 +72,28 @@ fn parse_args() -> Result<Args, String> {
             s => file = Some(PathBuf::from(s)),
         }
     }
-    let file = file.ok_or("missing <file.mod>")?;
+    if compose.is_some() {
+        if file.is_some() {
+            return Err("with --compose the starting module is --base <song.mod>, not a positional file".into());
+        }
+        if save.is_none() {
+            return Err("--compose needs --save <out.mod> (saving is how you accept)".into());
+        }
+        if events || spectrum || diesel || matches!(mode, Mode::Raw) {
+            return Err("--compose cannot be combined with --raw, --events, --spectrum or --diesel".into());
+        }
+    } else {
+        if base.is_some() || save.is_some() {
+            return Err("--base and --save belong to --compose".into());
+        }
+        if file.is_none() {
+            return Err("missing <file.mod>".into());
+        }
+    }
     if events && matches!(mode, Mode::Raw) {
         return Err("--events cannot be combined with --raw (both use stdout)".into());
     }
-    Ok(Args { file, mode, seconds, rate, events, spectrum, diesel })
+    Ok(Args { file, compose, base, save, mode, seconds, rate, events, spectrum, diesel })
 }
 
 fn fail(e: Error) -> ExitCode {
@@ -79,7 +112,10 @@ fn main() -> ExitCode {
             return ExitCode::from(2);
         }
     };
-    let module = match read_module(&args.file) {
+    if let Some(text) = &args.compose {
+        return compose_main(&args, text);
+    }
+    let module = match read_module(args.file.as_ref().expect("checked in parse_args")) {
         Ok(m) => m,
         Err(e) => return fail(e),
     };
@@ -122,6 +158,54 @@ fn main() -> ExitCode {
             Err(e) => fail(e),
         },
     }
+}
+
+#[cfg(not(feature = "llm"))]
+fn compose_main(_: &Args, _: &str) -> ExitCode {
+    eprintln!("paula-play: this build has no `llm` feature; rebuild with `cargo build --features llm`");
+    ExitCode::from(10 + Error::UnsupportedOperation(String::new()).code() as u8)
+}
+
+/// --compose: ask for a pattern, accept it, save the module, optionally render it to WAV.
+#[cfg(feature = "llm")]
+fn compose_main(args: &Args, text: &str) -> ExitCode {
+    let base = match &args.base {
+        Some(p) => match read_module(p) {
+            Ok(m) => m,
+            Err(e) => return fail(e),
+        },
+        None => Module::empty(),
+    };
+    let mut model = match llm::client::Anthropic::from_env() {
+        Ok(m) => m,
+        Err(e) => return fail(llm::ComposeError::Model(e).into()),
+    };
+    let proposal = match llm::compose(&mut model, &base, llm::Tempo::default(), text, &mut |s| eprintln!("paula-play: {s}")) {
+        Ok(p) => p,
+        Err(e) => return fail(e.into()),
+    };
+    let mut session = Session::new(base);
+    session.propose(proposal);
+    if let Err(e) = session.accept() {
+        return fail(Error::OutOfRange(e.to_string()));
+    }
+    let module = session.into_module();
+    let save = args.save.as_ref().expect("checked in parse_args");
+    if let Err(e) = std::fs::write(save, module.to_bytes()) {
+        return fail(Error::Io(format!("{}: {e}", save.display())));
+    }
+    eprintln!("paula-play: wrote {} (new pattern at song position {})", save.display(), module.song_len - 1);
+    if let Mode::Wav(out) = &args.mode {
+        let pcm = match render(&module, args.rate, args.seconds) {
+            Ok(p) => p,
+            Err(e) => return fail(e),
+        };
+        if let Err(e) = std::fs::write(out, wav::to_bytes(&pcm, args.rate)) {
+            return fail(Error::Io(format!("{}: {e}", out.display())));
+        }
+        eprintln!("paula-play: wrote {} ({:.1} s)", out.display(), pcm.len() as f64 / 2.0 / args.rate as f64);
+    }
+    ExitCode::SUCCESS
 }
 
 fn render(module: &paula::Module, rate: u32, seconds: f64) -> Result<Vec<i16>, Error> {
