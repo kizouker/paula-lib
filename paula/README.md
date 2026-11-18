@@ -34,26 +34,28 @@ paula-tui song.mod                   # space play/stop, arrows scroll, f follow,
 
 Binaries end up in `target/release/`. Exit codes: 0 ok, 2 usage error, 10 + the Req 9 error code otherwise (11 invalid argument, 12 out of range, 13 unsupported format, 14 I/O failure, 15 corrupt data, 16 unsupported operation).
 
-## Ready-made bundles (no build on the target machine)
+## Install without building (one command)
 
-Each bundle is a `paula-<version>-<target>.tar.gz` with `paula-play`, `paula-tui`, this README, the license and `INSTALL.txt`.
+On the machine where you want to run it (Linux x86_64 or macOS Apple silicon):
 
-- **Download:** GitHub → Actions → *paula release* → a finished run → Artifacts (or a GitHub Release for tags `paula-v*`). With the GitHub CLI:
-  ```sh
-  gh run download -R kizouker/paula-lib -n paula-ubuntu-22.04   # Linux x86_64
-  gh run download -R kizouker/paula-lib -n paula-macos-latest   # macOS Apple silicon
-  ```
-- **Copy to another machine and run:**
-  ```sh
-  scp paula-*-x86_64-unknown-linux-gnu.tar.gz other-host:
-  ssh other-host
-  tar -xzf paula-*.tar.gz && cd paula-*/
-  ./paula-play path/to/song.mod --wav out.wav   # works without a sound card
-  ./paula-play path/to/song.mod                 # plays to the speakers
-  ```
-- **Runtime needs:** Linux needs the ALSA library (`libasound2`, normally installed on desktop Ubuntu). Nothing else; SDL2 is not needed at runtime. The Linux build targets glibc from Ubuntu 22.04, so it runs on 22.04 and newer.
-- **Windows:** no bundle yet.
-- **Build a bundle yourself** for the machine you are on: `paula/scripts/bundle.sh` (output in `paula/dist/`).
+```sh
+curl -fsSL https://github.com/kizouker/paula-lib/releases/latest/download/install.sh | sh
+```
+
+The installer detects the OS and CPU, downloads the matching archive from the latest GitHub Release, checks its SHA-256, puts `paula-play` and `paula-tui` in `~/.local/bin`, and tells you what is still missing (PATH, or the ALSA library on Linux). Then:
+
+```sh
+paula-play path/to/song.mod --wav out.wav   # works without a sound card
+paula-play path/to/song.mod                 # plays to the speakers
+paula-tui  path/to/song.mod
+```
+
+- Options: `PAULA_VERSION=0.1.0` for a specific version, `PAULA_PREFIX=/usr/local` for another install folder.
+- Runtime needs: Linux needs the ALSA library (`libasound2`, normally installed on desktop Ubuntu). SDL2 is not needed at runtime. The Linux build uses the glibc of Ubuntu 22.04, so it runs on 22.04 and newer.
+- Windows: no ready-made build yet.
+- Uninstall: `rm ~/.local/bin/paula-play ~/.local/bin/paula-tui`.
+
+Releases are built on GitHub by `.github/workflows/release.yml` when a tag `paula-v*` is pushed. To pack the same archive on your own machine: `paula/scripts/bundle.sh` (output in `paula/dist/`).
 
 ## Tests
 
