@@ -8,6 +8,11 @@ on:
   workflow_dispatch:
   push:
     tags: ["paula-v*"]
+  # also build the bundles when the packaging itself changes, so a PR shows they work
+  pull_request:
+    paths:
+      - ".github/workflows/release.yml"
+      - "paula/scripts/**"
 
 permissions:
   contents: write
