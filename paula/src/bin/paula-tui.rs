@@ -1,12 +1,13 @@
 //! paula-tui: play a MOD in the terminal and browse its patterns.
 //!
 //!   paula-tui song.mod
-//! Keys: space play/stop · ↑/↓ row · PgUp/PgDn 16 rows · ←/→ song position · f follow · q quit
+//! Keys: space play/stop · ↑/↓ row · PgUp/PgDn 16 rows · ←/→ song position · f follow · s tracker/spectrum/both · q quit
 
 use paula::modfile::{note_name, text, Cell, NUM_CHANNELS, NUM_ROWS};
-use paula::{read_module, Engine, Module};
+use paula::spectrum_view::SpectrumWidget;
+use paula::{read_module, Engine, Module, Spectra};
 use ratatui::crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
-use ratatui::layout::{Constraint, Layout};
+use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Paragraph};
@@ -21,6 +22,13 @@ const PINK: Color = Color::Rgb(0xff, 0x3d, 0xc8);
 const GREEN: Color = Color::Rgb(0x39, 0xff, 0x88);
 const DIM: Color = Color::Rgb(0x60, 0x6a, 0x80);
 
+#[derive(Clone, Copy, PartialEq)]
+enum View {
+    Tracker,
+    Spectrum,
+    Both,
+}
+
 struct App {
     module: Module,
     engine: Arc<Mutex<Engine>>,
@@ -28,6 +36,8 @@ struct App {
     cursor: usize, // row
     follow: bool,
     status: String,
+    view: View,
+    spectra: Spectra,
 }
 
 fn main() -> ExitCode {
@@ -57,7 +67,7 @@ fn run(path: &std::path::Path) -> Result<(), String> {
     } else {
         format!("loaded; {} sample(s) cut to the engine limit", report.truncated_samples.len())
     };
-    let mut app = App { module, engine, view_pos: 0, cursor: 0, follow: true, status };
+    let mut app = App { module, engine, view_pos: 0, cursor: 0, follow: true, status, view: View::Tracker, spectra: Spectra::default() };
 
     let mut terminal = ratatui::init();
     let result = event_loop(&mut terminal, &mut app);
@@ -72,6 +82,11 @@ fn event_loop(terminal: &mut DefaultTerminal, app: &mut App) -> Result<(), Strin
             let e = app.engine.lock().unwrap();
             (e.is_playing(), e.position())
         };
+        {
+            // bars rise at once and fall slowly
+            let now = app.engine.lock().unwrap().channel_spectra();
+            app.spectra = app.spectra.decayed(&now, 0.85);
+        }
         if playing && app.follow {
             app.view_pos = pos;
             app.cursor = row as usize;
@@ -99,6 +114,14 @@ fn event_loop(terminal: &mut DefaultTerminal, app: &mut App) -> Result<(), Strin
                     app.follow = true;
                     app.status = "playing from the start".into();
                 }
+            }
+            KeyCode::Char('s') => {
+                app.view = match app.view {
+                    View::Tracker => View::Spectrum,
+                    View::Spectrum => View::Both,
+                    View::Both => View::Tracker,
+                };
+                app.status = format!("view {}", match app.view { View::Tracker => "tracker", View::Spectrum => "spectrum", View::Both => "tracker + spectrum" });
             }
             KeyCode::Char('f') => {
                 app.follow = !app.follow;
@@ -158,6 +181,25 @@ fn draw(f: &mut Frame, app: &App, playing: bool, pos: u8, row: u8) {
     ]);
     f.render_widget(Paragraph::new(header).block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(DIM)).title(" paula ")), head);
 
+    let (body, spec_area) = match app.view {
+        View::Tracker => (body, None),
+        View::Spectrum => (Rect::default(), Some(body)),
+        View::Both => {
+            let [t, s] = Layout::vertical([Constraint::Min(5), Constraint::Length(10)]).areas(body);
+            (t, Some(s))
+        }
+    };
+    if let Some(area) = spec_area {
+        let block = Block::default().borders(Borders::ALL).border_style(Style::default().fg(DIM)).title(" spectrum 50 Hz - 10 kHz ");
+        let inner = block.inner(area);
+        f.render_widget(block, area);
+        f.render_widget(SpectrumWidget { spectra: &app.spectra }, inner);
+    }
+    if body.height == 0 {
+        draw_footer(f, app, foot);
+        return;
+    }
+
     // tracker rows, cursor kept in the middle
     let height = body.height.saturating_sub(2) as usize;
     let top = app.cursor.saturating_sub(height / 2).min(NUM_ROWS.saturating_sub(height));
@@ -181,6 +223,10 @@ fn draw(f: &mut Frame, app: &App, playing: bool, pos: u8, row: u8) {
     let samples: String = m.samples.iter().enumerate().filter(|(_, s)| !s.data.is_empty()).take(6).map(|(i, s)| format!("{:02X} {}  ", i + 1, text(&s.name))).collect();
     f.render_widget(Paragraph::new(lines).block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(DIM)).title(format!(" {samples}"))), body);
 
-    let keys = "space play/stop · ↑↓ row · PgUp/PgDn 16 rows · ←→ position · f follow · q quit";
+    draw_footer(f, app, foot);
+}
+
+fn draw_footer(f: &mut Frame, app: &App, foot: Rect) {
+    let keys = "space play/stop · ↑↓ row · PgUp/PgDn 16 rows · ←→ position · f follow · s tracker/spectrum/both · q quit";
     f.render_widget(Paragraph::new(vec![Line::from(Span::styled(keys, Style::default().fg(DIM))), Line::from(app.status.as_str())]).block(Block::default().borders(Borders::TOP).border_style(Style::default().fg(DIM))), foot);
 }
