@@ -29,8 +29,9 @@ paula-play song.mod --wav out.wav    # render to WAV, no sound card needed
 paula-play song.mod --raw | aplay -f S16_LE -c2 -r44100   # raw PCM to stdout (Linux)
 paula-play song.mod --wav out.wav --seconds 30 --rate 48000
 
-paula-tui song.mod                   # space play/stop, arrows scroll, f follow, s spectrum view, q quit
+paula-tui song.mod                   # space play/stop, arrows scroll, f follow, s spectrum view, d Diesel, q quit
 paula-play song.mod --spectrum       # live 4-channel spectrum bars instead of the status line
+paula-play song.mod --diesel         # Diesel the mascot dances above the status line
 ```
 
 ### Events and glossary
@@ -64,13 +65,35 @@ How it works: the bridge records what the engine tells the `setVisuals*` hooks (
 
 Binaries end up in `target/release/`. Exit codes: 0 ok, 2 usage error, 10 + the Req 9 error code otherwise (11 invalid argument, 12 out of range, 13 unsupported format, 14 I/O failure, 15 corrupt data, 16 unsupported operation).
 
+### Diesel
+
+Diesel is a 28x28 pixel mascot (`assets/diesel.svg`, one `<rect>` per pixel) that dances to the music. `paula-tui`: key `d` toggles Diesel in the bottom-right corner (on by default; hidden when the terminal is too small). `paula-play song.mod --diesel` draws him above the status line and redraws in place; it needs a terminal, and with `--wav`, `--raw` or `--events` it prints a note and is ignored. He stands still when playback is stopped or the channels are silent. Needs a terminal with 24-bit colour and at least 34 columns.
+
+Rendering: each character is `▀` with the upper pixel as foreground and the lower pixel as background, so the 28x28 art plus a 3-pixel margin takes 34 columns x 17 rows. The dance only moves the original pixels (never new art): every frame has exactly the colours of the SVG.
+
+The beat comes from the player: a beat is every 4 rows, a note on a beat row is a "kick", and the loudest channel level (`Engine::channel_spectra`) switches the dance off when it falls under 2 %. In Rust, `paula::diesel` has `Image::diesel()`, `frame(&img, &moves)`, `Dancer` (feed it `Event`s from `render_events`, or `on_position`), `half_blocks` and `ansi_lines`; `paula::diesel_view::DieselWidget` is the ratatui widget (feature `tui`).
+
+#### Change the dance
+
+The choreography is data in `assets/diesel-dance.txt`; the rendering code does not need to change. Edit the file and rebuild (`cargo build`). Lines:
+
+```
+beats-per-bar 4              # beats in a bar (a beat = 4 rows)
+beat 0 bob+lean-left         # pose on beat 0 of the bar; moves joined with +
+beat 3 hop hold=3            # hold=1..4: rows the pose lasts (default 2), then he stands
+kick squash                  # extra moves on a beat whose first row has a note
+mirror-bars alternate        # flip left-right on every second bar
+```
+
+Moves: `bob`, `hop`, `squash`, `lean-left`, `lean-right`, `mirror`. A beat without a `beat` line is a rest. Errors name the line (for example `line 3: unknown move "moonwalk"`), and the unit tests parse the file, so `cargo test` tells you if an edit broke it. To add a new kind of move, add a variant to `Move` and its pixel mapping in `frame` in `src/diesel.rs`; the test `every_frame_has_the_colours_of_the_source` then checks it loses no pixels.
+
 ## Tests
 
 ```sh
 cargo test
 ```
 
-The tests need no audio device and download nothing: every MOD is generated in the test. They cover the MOD round trip, corrupt input, API defaults and range checks, onset timing (Req 5.2), the effect glossary and the event stream (`tests/events.rs`), the spectrum (`tests/spectrum.rs`), bit-identical rendering (Req 5.4), song-end detection with and without pattern loops (`E6x`), and the CLI exit codes.
+The tests need no audio device and download nothing: every MOD is generated in the test. They cover the MOD round trip, corrupt input, API defaults and range checks, onset timing (Req 5.2), the effect glossary and the event stream (`tests/events.rs`), the spectrum (`tests/spectrum.rs`), Diesel (`tests/diesel.rs`), bit-identical rendering (Req 5.4), song-end detection with and without pattern loops (`E6x`), and the CLI exit codes.
 
 ## Limits (v0.1)
 

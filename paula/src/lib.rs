@@ -5,8 +5,12 @@
 //! - [`events`]: row, note-on and song-end events reported while rendering.
 //! - [`glossary`]: readable names and meanings for every effect.
 //! - [`spectrum`]: per-channel spectrum bands, `Engine::channel_spectra`.
+//! - [`diesel`]: the Diesel mascot: SVG pixels, choreography data, dance frames, half-block rendering.
 //! - [`wav`]: write rendered PCM as WAV.
 
+pub mod diesel;
+#[cfg(feature = "tui")]
+pub mod diesel_view;
 pub mod engine;
 pub mod events;
 pub mod glossary;

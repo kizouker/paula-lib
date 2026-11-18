@@ -1,8 +1,10 @@
 //! paula-tui: play a MOD in the terminal and browse its patterns.
 //!
 //!   paula-tui song.mod
-//! Keys: space play/stop · ↑/↓ row · PgUp/PgDn 16 rows · ←/→ song position · f follow · s tracker/spectrum/both · q quit
+//! Keys: space play/stop · ↑/↓ row · PgUp/PgDn 16 rows · ←/→ song position · f follow · s tracker/spectrum/both · d diesel · q quit
 
+use paula::diesel::{self, Choreography, Dancer, Image};
+use paula::diesel_view::DieselWidget;
 use paula::modfile::{note_name, text, Cell, NUM_CHANNELS, NUM_ROWS};
 use paula::spectrum_view::SpectrumWidget;
 use paula::{read_module, Engine, Module, Spectra};
@@ -10,7 +12,7 @@ use ratatui::crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, Paragraph};
+use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 use ratatui::{DefaultTerminal, Frame};
 use std::process::ExitCode;
 use std::sync::{Arc, Mutex};
@@ -38,6 +40,10 @@ struct App {
     status: String,
     view: View,
     spectra: Spectra,
+    diesel: bool,
+    diesel_src: Image,
+    dancer: Dancer,
+    last_row: Option<(u8, u8)>,
 }
 
 fn main() -> ExitCode {
@@ -67,7 +73,7 @@ fn run(path: &std::path::Path) -> Result<(), String> {
     } else {
         format!("loaded; {} sample(s) cut to the engine limit", report.truncated_samples.len())
     };
-    let mut app = App { module, engine, view_pos: 0, cursor: 0, follow: true, status, view: View::Tracker, spectra: Spectra::default() };
+    let mut app = App { module, engine, view_pos: 0, cursor: 0, follow: true, status, view: View::Tracker, spectra: Spectra::default(), diesel: true, diesel_src: Image::diesel(), dancer: Dancer::new(Choreography::standard()), last_row: None };
 
     let mut terminal = ratatui::init();
     let result = event_loop(&mut terminal, &mut app);
@@ -86,6 +92,14 @@ fn event_loop(terminal: &mut DefaultTerminal, app: &mut App) -> Result<(), Strin
             // bars rise at once and fall slowly
             let now = app.engine.lock().unwrap().channel_spectra();
             app.spectra = app.spectra.decayed(&now, 0.85);
+        }
+        app.dancer.set_levels(&app.spectra.levels);
+        if !playing {
+            app.dancer.stop();
+            app.last_row = None;
+        } else if app.last_row != Some((pos, row)) {
+            app.last_row = Some((pos, row));
+            app.dancer.on_position(&app.module, pos, row);
         }
         if playing && app.follow {
             app.view_pos = pos;
@@ -122,6 +136,10 @@ fn event_loop(terminal: &mut DefaultTerminal, app: &mut App) -> Result<(), Strin
                     View::Both => View::Tracker,
                 };
                 app.status = format!("view {}", match app.view { View::Tracker => "tracker", View::Spectrum => "spectrum", View::Both => "tracker + spectrum" });
+            }
+            KeyCode::Char('d') => {
+                app.diesel = !app.diesel;
+                app.status = format!("diesel {}", if app.diesel { "on" } else { "off" });
             }
             KeyCode::Char('f') => {
                 app.follow = !app.follow;
@@ -181,6 +199,7 @@ fn draw(f: &mut Frame, app: &App, playing: bool, pos: u8, row: u8) {
     ]);
     f.render_widget(Paragraph::new(header).block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(DIM)).title(" paula ")), head);
 
+    let full_body = body;
     let (body, spec_area) = match app.view {
         View::Tracker => (body, None),
         View::Spectrum => (Rect::default(), Some(body)),
@@ -196,6 +215,7 @@ fn draw(f: &mut Frame, app: &App, playing: bool, pos: u8, row: u8) {
         f.render_widget(SpectrumWidget { spectra: &app.spectra }, inner);
     }
     if body.height == 0 {
+        draw_diesel(f, app, full_body);
         draw_footer(f, app, foot);
         return;
     }
@@ -223,10 +243,26 @@ fn draw(f: &mut Frame, app: &App, playing: bool, pos: u8, row: u8) {
     let samples: String = m.samples.iter().enumerate().filter(|(_, s)| !s.data.is_empty()).take(6).map(|(i, s)| format!("{:02X} {}  ", i + 1, text(&s.name))).collect();
     f.render_widget(Paragraph::new(lines).block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(DIM)).title(format!(" {samples}"))), body);
 
+    draw_diesel(f, app, full_body);
     draw_footer(f, app, foot);
 }
 
+/// Diesel in the bottom-right corner of the body, over whatever is there; skipped when it does not fit.
+fn draw_diesel(f: &mut Frame, app: &App, body: Rect) {
+    let img = diesel::frame(&app.diesel_src, &app.dancer.pose());
+    let (w, h) = (img.w as u16 + 2, (img.h / 2) as u16 + 2);
+    if !app.diesel || body.width < w + 20 || body.height < h {
+        return;
+    }
+    let area = Rect::new(body.x + body.width - w, body.y + body.height - h, w, h);
+    let block = Block::default().borders(Borders::ALL).border_style(Style::default().fg(DIM)).title(" diesel ");
+    let inner = block.inner(area);
+    f.render_widget(Clear, area);
+    f.render_widget(block, area);
+    f.render_widget(DieselWidget { frame: &img }, inner);
+}
+
 fn draw_footer(f: &mut Frame, app: &App, foot: Rect) {
-    let keys = "space play/stop · ↑↓ row · PgUp/PgDn 16 rows · ←→ position · f follow · s tracker/spectrum/both · q quit";
+    let keys = "space play/stop · ↑↓ row · PgUp/PgDn 16 rows · ←→ position · f follow · s tracker/spectrum/both · d diesel · q quit";
     f.render_widget(Paragraph::new(vec![Line::from(Span::styled(keys, Style::default().fg(DIM))), Line::from(app.status.as_str())]).block(Block::default().borders(Borders::TOP).border_style(Style::default().fg(DIM))), foot);
 }
