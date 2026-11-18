@@ -149,9 +149,35 @@ int paula_max_sample_len(void) { return PAULA_MAX_SAMPLE_LEN; }
 
 /* clear filter, BLEP, downsampler, dither and tick-counter state, so that the same module and
 ** the same render calls give bit-identical output (Req 5.4) */
+/* Paula's voices (static in pt2_paula.c) keep their held sample, DMA buffer and fetch stage
+** after the replayer stops; startDMA() does not clear them, so a render after a mid-song stop
+** started from different voice state (issue #35). We cannot edit src/, so we drive every voice
+** through the same fixed sequence with the public register API: silent null sample, fixed period
+** and volume, DMA on, mix a few samples (the voices fetch zeros), DMA off. Afterwards the voice
+** state depends only on this sequence. paulaSetup() below then clears filters and BLEP. */
+static void paula_reset_voices(void)
+{
+	static float scratchL[256], scratchR[256];
+	const int8_t *nul = paulaGetNullSamplePtr();
+	for (int32_t i = 0; i < PAULA_VOICES; i++)
+	{
+		const uint32_t a = 0xDFF0A0 + (i * 16);
+		paulaWritePtr(a + 0, nul);      /* AUDxLC  */
+		paulaWriteWord(a + 4, 1);       /* AUDxLEN, in words */
+		paulaWriteWord(a + 6, 113);     /* AUDxPER */
+		paulaWriteWord(a + 8, 64);      /* AUDxVOL */
+	}
+	paulaWriteWord(0xDFF096, 0x800F);   /* DMA on for all four voices */
+	paulaGenerateSamples(scratchL, scratchR, 256);
+	paulaWriteWord(0xDFF096, 0x000F);   /* DMA off */
+	for (int32_t i = 0; i < PAULA_VOICES; i++)
+		paulaWriteWord(0xDFF0A0 + (i * 16) + 8, 0);
+}
+
 static void paula_reset_audio_state(void)
 {
 	const int32_t mixFreq = audio.oversamplingFlag ? audio.outputRate*2 : audio.outputRate;
+	paula_reset_voices();
 	paulaSetup(mixFreq, audio.amigaModel);
 	clearDownsample2xStates();
 	resetAudioDither();
