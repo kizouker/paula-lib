@@ -7,9 +7,12 @@
 //!                                       renders offline (no sound card), combine with --wav to keep the audio
 //!   --spectrum                          while playing to the speakers, show a live 4-channel spectrum bar
 //!                                       line instead of the status line (needs a terminal; ignored otherwise)
+//!   --diesel                            while playing to the speakers, show Diesel the mascot dancing above the
+//!                                       status line, redrawn in place (needs a terminal; ignored otherwise)
 //! Options: --seconds N (limit, default 600), --rate HZ (for --wav/--raw, default 44100).
 //! Exit codes: 0 ok, 2 usage, otherwise the Req 9 error code + 10.
 
+use paula::diesel::{self, Choreography, Dancer, Image};
 use paula::{engine, read_module, wav, Engine, Error, Event, EventKind, Spectra};
 use std::io::{IsTerminal, Write};
 use std::path::PathBuf;
@@ -30,20 +33,22 @@ struct Args {
     rate: u32,
     events: bool,
     spectrum: bool,
+    diesel: bool,
 }
 
-const USAGE: &str = "usage: paula-play <file.mod> [--wav <out.wav> | --raw] [--events] [--spectrum] [--seconds N] [--rate HZ]";
+const USAGE: &str = "usage: paula-play <file.mod> [--wav <out.wav> | --raw] [--events] [--spectrum] [--diesel] [--seconds N] [--rate HZ]";
 
 fn parse_args() -> Result<Args, String> {
     let mut it = std::env::args().skip(1);
     let (mut file, mut mode, mut seconds, mut rate) = (None, Mode::Play, 600.0, 44_100);
-    let (mut events, mut spectrum) = (false, false);
+    let (mut events, mut spectrum, mut diesel) = (false, false, false);
     while let Some(a) = it.next() {
         match a.as_str() {
             "--wav" => mode = Mode::Wav(it.next().ok_or("--wav needs a file name")?.into()),
             "--raw" => mode = Mode::Raw,
             "--events" => events = true,
             "--spectrum" => spectrum = true,
+            "--diesel" => diesel = true,
             "--seconds" => seconds = it.next().and_then(|s| s.parse().ok()).ok_or("--seconds needs a number")?,
             "--rate" => rate = it.next().and_then(|s| s.parse().ok()).ok_or("--rate needs a number")?,
             "-h" | "--help" => return Err(String::new()),
@@ -55,7 +60,7 @@ fn parse_args() -> Result<Args, String> {
     if events && matches!(mode, Mode::Raw) {
         return Err("--events cannot be combined with --raw (both use stdout)".into());
     }
-    Ok(Args { file, mode, seconds, rate, events, spectrum })
+    Ok(Args { file, mode, seconds, rate, events, spectrum, diesel })
 }
 
 fn fail(e: Error) -> ExitCode {
@@ -81,6 +86,9 @@ fn main() -> ExitCode {
 
     if args.spectrum && (args.events || !matches!(args.mode, Mode::Play)) {
         eprintln!("paula-play: --spectrum only works while playing to the speakers; ignored");
+    }
+    if args.diesel && (args.events || !matches!(args.mode, Mode::Play)) {
+        eprintln!("paula-play: --diesel only works while playing to the speakers; ignored");
     }
     match args.mode {
         Mode::Play if args.events => match render_events(&module, args.rate, args.seconds) {
@@ -109,7 +117,7 @@ fn main() -> ExitCode {
             }
             ExitCode::SUCCESS
         }
-        Mode::Play => match play(&module, args.seconds, args.spectrum) {
+        Mode::Play => match play(&module, args.seconds, args.spectrum, args.diesel) {
             Ok(()) => ExitCode::SUCCESS,
             Err(e) => fail(e),
         },
@@ -149,7 +157,7 @@ fn report(r: &paula::LoadReport) {
     }
 }
 
-fn play(module: &paula::Module, seconds: f64, spectrum: bool) -> Result<(), Error> {
+fn play(module: &paula::Module, seconds: f64, spectrum: bool, diesel: bool) -> Result<(), Error> {
     let rate = paula::output::device_rate().map_err(Error::Io)?;
     let mut e = Engine::new(rate)?;
     report(&e.load(module)?);
@@ -164,10 +172,21 @@ fn play(module: &paula::Module, seconds: f64, spectrum: bool) -> Result<(), Erro
         }
         tty
     };
+    let diesel = diesel && {
+        let tty = std::io::stderr().is_terminal();
+        if !tty {
+            eprintln!("paula-play: --diesel needs a terminal; ignored");
+        }
+        tty
+    };
     eprintln!("paula-play: \"{}\" at {rate} Hz, Ctrl-C to quit", module.title());
     let mut last = (0u8, 0u8);
     let start = std::time::Instant::now();
     let (mut shown, mut last_draw) = (Spectra::default(), std::time::Instant::now());
+    let (src, mut dancer) = (Image::diesel(), Dancer::new(Choreography::standard()));
+    dancer.on_position(module, 0, 0);
+    let mut diesel_rows = 0usize;
+    let mut status = String::new();
     loop {
         std::thread::sleep(Duration::from_millis(5));
         let (now, bpm, speed) = {
@@ -177,15 +196,34 @@ fn play(module: &paula::Module, seconds: f64, spectrum: bool) -> Result<(), Erro
         if engine::is_song_end(module, last, now) || start.elapsed().as_secs_f64() > seconds {
             break;
         }
-        if spectrum {
+        if now != last {
+            dancer.on_position(module, now.0, now.1);
+            status = format!("pos {:02}/{:02}  row {:02}  bpm {bpm:3}  speed {speed:2} ", now.0, module.song_len, now.1);
+        }
+        if spectrum || diesel {
             if last_draw.elapsed() >= Duration::from_millis(33) {
                 last_draw = std::time::Instant::now();
                 let fresh = engine.lock().unwrap().channel_spectra();
                 shown = shown.decayed(&fresh, 0.85);
-                eprint!("\r{}\x1b[K", paula::spectrum::bar_line(&shown, true));
+                dancer.set_levels(&shown.levels);
+                let mut out = String::new();
+                if diesel {
+                    let lines = diesel::ansi_lines(&diesel::frame(&src, &dancer.pose()));
+                    if diesel_rows == 0 {
+                        // reserve the rows once, then move back up to the first one before each redraw
+                        diesel_rows = lines.len();
+                        out.push_str(&"\n".repeat(diesel_rows));
+                    }
+                    out.push_str(&format!("\x1b[{diesel_rows}A\r"));
+                    for l in &lines {
+                        out.push_str(&format!("{l}\x1b[K\n"));
+                    }
+                }
+                let line = if spectrum { paula::spectrum::bar_line(&shown, true) } else { status.clone() };
+                eprint!("{out}\r{line}\x1b[K");
             }
         } else if now != last {
-            eprint!("\rpos {:02}/{:02}  row {:02}  bpm {bpm:3}  speed {speed:2} ", now.0, module.song_len, now.1);
+            eprint!("\r{status}");
         }
         last = now;
     }

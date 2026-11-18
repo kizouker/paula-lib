@@ -1,0 +1,30 @@
+# Diesel's choreography. Edit this file to change the dance; no Rust code needs to change
+# (rebuild afterwards, or pass the file to a host that loads it at run time).
+#
+# Time: one beat is 4 pattern rows. A bar is `beats-per-bar` beats.
+# Every line is "<keyword> <arguments>"; '#' starts a comment; blank lines are ignored.
+#
+#   beats-per-bar N         beats in one bar (default 4)
+#   beat I MOVES [hold=R]   pose on beat I (0 = first beat of the bar). MOVES are joined with '+'.
+#                           hold=R: the pose lasts R rows (1..4, default 2), then Diesel stands.
+#                           A beat with no line is a rest.
+#   kick MOVES              extra moves on any beat where a note starts on the beat row
+#                           (the "kick"), added to the beat's own moves.
+#   mirror-bars alternate   flip Diesel left-right on every second bar (omit the line for never).
+#
+# Moves (each only moves the same pixels; none adds, removes or recolours one):
+#   bob         one pixel down
+#   hop         two pixels up
+#   squash      one pixel down and the body split one pixel apart (wide, low)
+#   lean-left   upper body shifted left (2 px at the top, 1 px in the middle)
+#   lean-right  upper body shifted right
+#   mirror      flip left-right
+
+beats-per-bar 4
+beat 0 bob+lean-left
+beat 1 bob+lean-right
+beat 2 bob+lean-left
+beat 3 hop hold=3
+
+kick squash
+mirror-bars alternate
