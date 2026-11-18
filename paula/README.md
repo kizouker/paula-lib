@@ -125,6 +125,72 @@ mirror-bars alternate        # flip left-right on every second bar
 
 Moves: `bob`, `hop`, `squash`, `lean-left`, `lean-right`, `mirror`. A beat without a `beat` line is a rest. Errors name the line (for example `line 3: unknown move "moonwalk"`), and the unit tests parse the file, so `cargo test` tells you if an edit broke it. To add a new kind of move, add a variant to `Move` and its pixel mapping in `frame` in `src/diesel.rs`; the test `every_frame_has_the_colours_of_the_source` then checks it loses no pixels.
 
+## Write a score (.paula.toml)
+
+A score is a TOML file: the style, the roles (drums and pitched lines), named chord progressions and the song form. Small notations live inside the strings. `paula-play --score` compiles it onto the samples of a base module and gives a normal MOD. The music theory (modes, chords, degrees, circle of fifths) is Rust code in `paula::theory`.
+
+```toml
+#:schema ../schema/paula.schema.json
+[style]
+name = "Rio zouk"
+key = "A aeolian"          # tonic and mode (ionian, dorian, phrygian, lydian, mixolydian, aeolian, locrian)
+bpm = 90
+tempo = [80, 100]          # optional range, the linter warns when bpm is outside it
+meter = "4/4"              # the only meter in v0
+
+[progression]              # bars separated by |, one or two chords per bar
+verse  = "Am7 | Fmaj7 | Dm7 | Em7"
+chorus = "VImaj7 VII7 | i7 | VImaj7 VII7 | i7"   # chord symbols or degrees of the key's scale
+
+[role.kick]                # drums: channel 1-4, sample number in the base module
+channel = 1
+sample = 1
+groove = "x.....x.x.....x."   # 16 steps per bar: x hit, o ghost (quiet), . rest
+
+[role.bass]                # pitched: register and a rule
+channel = 3
+sample = 4
+register = "C-1..G-2"      # lowest..highest note, C-1 to B-3
+rule = "root-fifth"        # root, root-fifth, chord-tones, guide-tones, walk
+groove = "x.....x.x.....x."
+
+[song]
+form = "verse 8, chorus 8"  # progression name and bars (a multiple of 4: one pattern is 4 bars)
+```
+
+Details: a `groove` may hold up to four rows separated by spaces, one per bar, repeated in turn. A ghost note plays with a lower volume (`C18`). Two chords in a bar split it at step 9. `bpm` and `speed` (default 6) are written as `Fxx` effects in the first pattern. `swing` is accepted and kept but not rendered in v0. The full example is `examples/rio-zouk.paula.toml`.
+
+```sh
+# 1. A sample kit to play it on (generated, no download): kick, snare, hat, bass, keys
+cargo run --example make-kit -- kit.mod
+
+# 2. Check the score, then compile it
+paula-lint examples/rio-zouk.paula.toml --base kit.mod
+paula-play --score examples/rio-zouk.paula.toml --base kit.mod --save song.mod --wav song.wav
+
+# 3. Or play it in the terminal UI
+paula-tui --score examples/rio-zouk.paula.toml --base kit.mod
+```
+
+(With `cargo run` instead of installed binaries: `cargo run --bin paula-lint -- examples/rio-zouk.paula.toml --base kit.mod`.)
+
+### Linter: `paula-lint`
+
+```sh
+paula-lint song.paula.toml [--base kit.mod] [--json] [--strict]
+paula-play --check song.paula.toml [--base kit.mod] [--json] [--strict]    # the same check
+```
+
+One finding per line in the compiler style `file:line:col: level: message`, so editors and CI understand it, for example `song.paula.toml:7:9: warning: progression.verse bar 4: G# is not in A aeolian`. The line and column point at the start of the value the message is about. `--json` prints the same findings as one JSON object (`file`, `errors`, `warnings`, and `diagnostics` with `level`, `code`, `line`, `col`, `message`) for tools; the model repair loop can send the message lines back. Exit code: 0 clean, 1 warnings only, 2 errors (or a usage error). `--base` also checks that every sample a role names holds data.
+
+Errors (no compile): TOML syntax, unknown key, wrong type, missing key, bad groove (not 16 steps, unknown character), unparsable chord or degree, note outside the 36-note range C-1..B-3, register outside C-1..B-3 or reversed, channel not 1-4, two roles on one channel, form names a missing progression, empty sample in `--base`, and a few more (bad key, meter other than 4/4, bar count not a multiple of 4).
+
+Warnings (compiles, but probably not what you want): a chord tone outside the key (a blue or approach note is allowed), a chord with more than 4 tones when a role plays `chord-tones`, a bass role off the chord on beat 1 or 3, clave direction differing between roles, more hits in a bar than a role's `max_density`, `bpm` outside the style `tempo`. With `--strict` (or `strict = true` in `[style]`) the out-of-key warning is an error.
+
+### Live checks in VS Code (JSON Schema)
+
+`schema/paula.schema.json` describes the file. With the "Even Better TOML" extension (Taplo) the first line `#:schema ../schema/paula.schema.json` (a path relative to the score) makes the editor underline unknown keys, wrong types, bad channels and malformed grooves while you type. The music checks (scale, register, clave, voices) stay in `paula-lint`.
+
 ## Install without building (one command)
 
 On the machine where you want to run it (Linux x86_64 or macOS Apple silicon):
@@ -154,7 +220,7 @@ Releases are built on GitHub by `.github/workflows/release.yml` when a tag `paul
 cargo test
 ```
 
-The tests need no audio device and download nothing: every MOD is generated in the test. They cover the MOD round trip, corrupt input, API defaults and range checks, onset timing (Req 5.2), the effect glossary and the event stream (`tests/events.rs`), the spectrum (`tests/spectrum.rs`), Diesel (`tests/diesel.rs`), the model backend with a fake model, no network and no key (`tests/backend.rs`), bit-identical rendering (Req 5.4), song-end detection with and without pattern loops (`E6x`), and the CLI exit codes.
+The tests need no audio device and download nothing: every MOD is generated in the test. They cover the MOD round trip, corrupt input, API defaults and range checks, onset timing (Req 5.2), the effect glossary and the event stream (`tests/events.rs`), the spectrum (`tests/spectrum.rs`), Diesel (`tests/diesel.rs`), the model backend with a fake model, no network and no key (`tests/backend.rs`), bit-identical rendering (Req 5.4), song-end detection with and without pattern loops (`E6x`), the score format: theory facts (`tests/theory.rs`), notation parsers, the compiler and the example song rendered with kick onsets on the kick rows (`tests/score.rs`), and the linter with one fixture per error and warning under `tests/fixtures/lint/` plus the JSON Schema (`tests/lint.rs`), and the CLI exit codes.
 
 ## Limits (v0.1)
 

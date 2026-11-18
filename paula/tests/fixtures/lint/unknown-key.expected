@@ -1,0 +1,1 @@
+unknown-key.paula.toml:5:1: error: unknown key `colour`, expected one of `name`, `key`, `bpm`, `tempo`, `swing`, `meter`, `speed`, `strict`

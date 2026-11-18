@@ -1,0 +1,15 @@
+[style]
+name = "t"
+key = "A aeolian"
+bpm = 90
+
+[progression]
+verse = "Am7 | Fmaj7 | Dm7 | Em7"
+
+[role.kick]
+channel = 1
+sample = 1
+groove = "x...x...x...x..."
+
+[song]
+form = "verse 6"

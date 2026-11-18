@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/kizouker/paula-lib/paula/schema/paula.schema.json",
+  "title": "paula score (.paula.toml)",
+  "description": "Style, roles, progressions and song form for paula. The music checks (scale, register, clave, voices) stay in paula-lint.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["style", "song"],
+  "properties": {
+    "style": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "key", "bpm"],
+      "properties": {
+        "name": { "type": "string", "description": "Song title; the module name (first 20 characters)." },
+        "key": {
+          "type": "string",
+          "description": "Tonic and mode, like \"A aeolian\".",
+          "pattern": "^[A-G][#b]* (ionian|dorian|phrygian|lydian|mixolydian|aeolian|locrian|major|minor)$"
+        },
+        "bpm": { "type": "integer", "minimum": 32, "maximum": 255, "description": "Beats per minute the module plays at." },
+        "tempo": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 32, "maximum": 255 },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "[low, high]; paula-lint warns when bpm is outside it."
+        },
+        "swing": { "type": "number", "minimum": 0, "maximum": 1, "description": "Stored for later; v0 does not render swing." },
+        "meter": { "type": "string", "enum": ["4/4"], "description": "Only 4/4 in v0." },
+        "speed": { "type": "integer", "minimum": 1, "maximum": 31, "description": "Ticks per row, default 6." },
+        "strict": { "type": "boolean", "description": "Notes outside the key are errors instead of warnings." }
+      }
+    },
+    "progression": {
+      "type": "object",
+      "description": "Named progressions: bars separated by |, one or two chords per bar, chord symbols (Am7 Fmaj7 G13b9) or degrees (ii7 V7 Imaj7).",
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    },
+    "role": {
+      "type": "object",
+      "description": "One table per role: [role.kick], [role.bass] ...",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["channel", "sample", "groove"],
+        "properties": {
+          "channel": { "type": "integer", "minimum": 1, "maximum": 4, "description": "MOD channel 1-4; one role per channel." },
+          "sample": { "type": "integer", "minimum": 1, "maximum": 31, "description": "Sample number in the base module." },
+          "groove": {
+            "type": "string",
+            "description": "16 steps per bar: x hit, o ghost (quiet), . rest. Up to 4 rows separated by spaces, one per bar.",
+            "pattern": "^[xo.]{16}( [xo.]{16}){0,3}$"
+          },
+          "register": {
+            "type": "string",
+            "description": "Pitched roles: lowest..highest note, like \"C-1..C-2\" (C-1 to B-3).",
+            "pattern": "^[A-G][-#b][0-9]\\.\\.[A-G][-#b][0-9]$"
+          },
+          "rule": {
+            "type": "string",
+            "enum": ["root", "root-fifth", "chord-tones", "guide-tones", "walk"],
+            "description": "Pitched roles: how notes come from the chord of each bar."
+          },
+          "clave": { "type": "string", "enum": ["3-2", "2-3"], "description": "Clave direction; paula-lint warns when roles differ." },
+          "max_density": { "type": "integer", "minimum": 1, "maximum": 16, "description": "Most hits (x and o) per bar before paula-lint warns." }
+        }
+      }
+    },
+    "song": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["form"],
+      "properties": {
+        "form": {
+          "type": "string",
+          "description": "Sections in order, each a progression name and a bar count (multiple of 4): \"intro 4, verse 8, chorus 8\".",
+          "pattern": "^\\s*[^\\s,]+\\s+[0-9]+\\s*(,\\s*[^\\s,]+\\s+[0-9]+\\s*)*$"
+        }
+      }
+    }
+  }
+}

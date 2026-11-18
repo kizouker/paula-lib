@@ -13,6 +13,11 @@
 //!                                       ask the model for one new pattern, append it to the base module
 //!                                       (an empty one without --base) and write the result to --save.
 //!                                       Needs ANTHROPIC_API_KEY (environment or .env). --save is the accept.
+//!   --check song.paula.toml [--base kit.mod] [--json] [--strict]
+//!                                       lint a score (same as paula-lint); exit 0 clean, 1 warnings, 2 errors
+//!   --score song.paula.toml --base kit.mod [--save out.mod] [--wav out.wav] [--strict]
+//!                                       compile a score onto the samples of a base module; --save writes the MOD,
+//!                                       --wav renders it, with neither it plays to the sound output
 //! Options: --seconds N (limit, default 600), --rate HZ (for --wav/--raw, default 44100).
 //! Exit codes: 0 ok, 2 usage, otherwise the Req 9 error code + 10.
 
@@ -34,6 +39,11 @@ enum Mode {
 
 struct Args {
     file: Option<PathBuf>,
+    /// --check <score>: lint only
+    check: Option<PathBuf>,
+    /// --score <score>: compile and save/render/play
+    score: Option<PathBuf>,
+    strict: bool,
     compose: Option<String>,
     #[cfg_attr(not(feature = "llm"), allow(dead_code))]
     base: Option<PathBuf>,
@@ -48,13 +58,16 @@ struct Args {
 }
 
 const USAGE: &str = "usage: paula-play <file.mod> [--wav <out.wav> | --raw] [--events] [--spectrum] [--diesel] [--seconds N] [--rate HZ]
-       paula-play --compose <text> --save <out.mod> [--base <song.mod>] [--wav <out.wav>]";
+       paula-play --compose <text> --save <out.mod> [--base <song.mod>] [--wav <out.wav>]
+       paula-play --check <song.paula.toml> [--base <kit.mod>] [--json] [--strict]
+       paula-play --score <song.paula.toml> --base <kit.mod> [--save <out.mod>] [--wav <out.wav>] [--strict]";
 
 fn parse_args() -> Result<Args, String> {
     let mut it = std::env::args().skip(1);
     let (mut file, mut mode, mut seconds, mut rate) = (None, Mode::Play, 600.0, 44_100);
     let (mut events, mut spectrum, mut diesel) = (false, false, false);
     let (mut compose, mut base, mut save) = (None, None, None);
+    let (mut check, mut score, mut strict) = (None, None, false);
     while let Some(a) = it.next() {
         match a.as_str() {
             "--wav" => mode = Mode::Wav(it.next().ok_or("--wav needs a file name")?.into()),
@@ -62,6 +75,10 @@ fn parse_args() -> Result<Args, String> {
             "--compose" => compose = Some(it.next().ok_or("--compose needs a text")?),
             "--base" => base = Some(PathBuf::from(it.next().ok_or("--base needs a file name")?)),
             "--save" => save = Some(PathBuf::from(it.next().ok_or("--save needs a file name")?)),
+            "--check" => check = Some(PathBuf::from(it.next().ok_or("--check needs a file name")?)),
+            "--score" => score = Some(PathBuf::from(it.next().ok_or("--score needs a file name")?)),
+            "--strict" => strict = true,
+            "--json" => {} // read by --check from the raw arguments
             "--events" => events = true,
             "--spectrum" => spectrum = true,
             "--diesel" => diesel = true,
@@ -71,6 +88,21 @@ fn parse_args() -> Result<Args, String> {
             s if s.starts_with('-') => return Err(format!("unknown option {s}")),
             s => file = Some(PathBuf::from(s)),
         }
+    }
+    if check.is_some() {
+        return Ok(Args { file, check, score, strict, compose, base, save, mode, seconds, rate, events, spectrum, diesel });
+    }
+    if score.is_some() {
+        if file.is_some() || compose.is_some() {
+            return Err("--score takes no <file.mod> and cannot be combined with --compose".into());
+        }
+        if base.is_none() {
+            return Err("--score needs --base <kit.mod> (the module whose samples the score plays)".into());
+        }
+        if events || spectrum || diesel || matches!(mode, Mode::Raw) {
+            return Err("--score cannot be combined with --raw, --events, --spectrum or --diesel".into());
+        }
+        return Ok(Args { file, check, score, strict, compose, base, save, mode, seconds, rate, events, spectrum, diesel });
     }
     if compose.is_some() {
         if file.is_some() {
@@ -93,7 +125,7 @@ fn parse_args() -> Result<Args, String> {
     if events && matches!(mode, Mode::Raw) {
         return Err("--events cannot be combined with --raw (both use stdout)".into());
     }
-    Ok(Args { file, compose, base, save, mode, seconds, rate, events, spectrum, diesel })
+    Ok(Args { file, check, score, strict, compose, base, save, mode, seconds, rate, events, spectrum, diesel })
 }
 
 fn fail(e: Error) -> ExitCode {
@@ -112,6 +144,16 @@ fn main() -> ExitCode {
             return ExitCode::from(2);
         }
     };
+    if args.check.is_some() {
+        // everything after --check is the linter's own argument list
+        let at = std::env::args().position(|a| a == "--check").unwrap_or(1);
+        let mut rest: Vec<String> = std::env::args().skip(at + 1).collect();
+        rest.retain(|a| a != "--check");
+        return ExitCode::from(paula::score::lint::run_cli("paula-play --check", &rest));
+    }
+    if args.score.is_some() {
+        return score_main(&args);
+    }
     if let Some(text) = &args.compose {
         return compose_main(&args, text);
     }
@@ -154,6 +196,54 @@ fn main() -> ExitCode {
             ExitCode::SUCCESS
         }
         Mode::Play => match play(&module, args.seconds, args.spectrum, args.diesel) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(e) => fail(e),
+        },
+    }
+}
+
+/// --score: lint, compile onto the base module's samples, then save, render or play.
+fn score_main(args: &Args) -> ExitCode {
+    let path = args.score.as_ref().expect("checked by the caller");
+    let name = path.display().to_string();
+    let src = match std::fs::read_to_string(path) {
+        Ok(s) => s,
+        Err(e) => return fail(Error::Io(format!("{name}: {e}"))),
+    };
+    let base = match read_module(args.base.as_ref().expect("checked in parse_args")) {
+        Ok(m) => m,
+        Err(e) => return fail(e),
+    };
+    let module = match paula::score::compile_source(&src, &base, args.strict) {
+        Ok((m, warnings)) => {
+            eprint!("{}", paula::score::lint::render_text(&name, &warnings));
+            m
+        }
+        Err(diags) => {
+            eprint!("{}", paula::score::lint::render_text(&name, &diags));
+            return ExitCode::from(2);
+        }
+    };
+    if let Some(save) = &args.save {
+        if let Err(e) = std::fs::write(save, module.to_bytes()) {
+            return fail(Error::Io(format!("{}: {e}", save.display())));
+        }
+        eprintln!("paula-play: wrote {} ({} patterns)", save.display(), module.patterns.len());
+    }
+    match &args.mode {
+        Mode::Wav(out) => {
+            let pcm = match render(&module, args.rate, args.seconds) {
+                Ok(p) => p,
+                Err(e) => return fail(e),
+            };
+            if let Err(e) = std::fs::write(out, wav::to_bytes(&pcm, args.rate)) {
+                return fail(Error::Io(format!("{}: {e}", out.display())));
+            }
+            eprintln!("paula-play: wrote {} ({:.1} s)", out.display(), pcm.len() as f64 / 2.0 / args.rate as f64);
+            ExitCode::SUCCESS
+        }
+        _ if args.save.is_some() => ExitCode::SUCCESS,
+        _ => match play(&module, args.seconds, false, false) {
             Ok(()) => ExitCode::SUCCESS,
             Err(e) => fail(e),
         },

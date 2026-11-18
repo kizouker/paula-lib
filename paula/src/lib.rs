@@ -7,6 +7,7 @@
 //! - [`spectrum`]: per-channel spectrum bands, `Engine::channel_spectra`.
 //! - [`diesel`]: the Diesel mascot: SVG pixels, choreography data, dance frames, half-block rendering.
 //! - [`rules`], [`session`], [`llm`]: the backend frontends share: MOD rules, song + undo + proposals, and the LLM prompt/parse/repair/client.
+//! - [`theory`], [`score`]: music theory and the `.paula.toml` score format (parse, lint, compile to a module).
 //! - [`wav`]: write rendered PCM as WAV.
 
 pub mod diesel;
@@ -20,10 +21,12 @@ pub mod modfile;
 #[cfg(feature = "audio")]
 pub mod output;
 pub mod rules;
+pub mod score;
 pub mod session;
 pub mod spectrum;
 #[cfg(feature = "tui")]
 pub mod spectrum_view;
+pub mod theory;
 pub mod wav;
 
 pub use engine::{Engine, Error, LoadReport};
