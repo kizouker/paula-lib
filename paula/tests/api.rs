@@ -173,6 +173,25 @@ fn onsets_on_time() {
 }
 
 #[test]
+fn stopping_mid_song_does_not_change_the_next_render() {
+    // issue #35: Paula voice state left over from a mid-song stop changed the next render
+    let m = kick_module();
+    let render = || {
+        let mut e = Engine::new(RATE).unwrap();
+        e.load(&m).unwrap();
+        e.render_song(&m, 2.0).unwrap()
+    };
+    let before = render();
+    for secs in [0.13, 0.5, 4.0] {
+        let mut e = Engine::new(RATE).unwrap();
+        e.load(&m).unwrap();
+        e.render_song(&m, secs).unwrap(); // stops in the middle of the song (and of a kick)
+        drop(e);
+        assert!(render() == before, "render after a stop at {secs} s differs (Req 5.4)");
+    }
+}
+
+#[test]
 fn rendering_is_deterministic() {
     let m = kick_module();
     let a = {
