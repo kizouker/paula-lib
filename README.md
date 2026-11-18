@@ -3,8 +3,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/kizouker/protracker2-agent-assist/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/kizouker/protracker2-agent-assist/ci.yml?branch=main&label=CI&style=for-the-badge&labelColor=0b0f1a&color=39ff88"></a>
-  <a href="https://kizouker.github.io/protracker2-agent-assist/"><img alt="Website" src="https://img.shields.io/badge/website-glow-00e5ff?style=for-the-badge&labelColor=0b0f1a"></a>
+  <a href="https://github.com/kizouker/paula-lib/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/kizouker/paula-lib/ci.yml?branch=main&label=CI&style=for-the-badge&labelColor=0b0f1a&color=39ff88"></a>
+  <a href="https://kizouker.github.io/paula-lib/"><img alt="Website" src="https://img.shields.io/badge/website-glow-00e5ff?style=for-the-badge&labelColor=0b0f1a"></a>
   <img alt="Kiroween" src="https://img.shields.io/badge/Kiroween-2026-ff2e97?style=for-the-badge&labelColor=0b0f1a">
   <img alt="Rust" src="https://img.shields.io/badge/Rust-wasm-ffb02e?style=for-the-badge&labelColor=0b0f1a">
 </p>
@@ -13,7 +13,18 @@ An agent-assisted ProTracker 2-style tracker, built on an open-source ProTracker
 
 Built for the **Kiroween** hackathon (Resurrection track) with Kiro CLI and Kiro Crew.
 
-**Website:** [kizouker.github.io/protracker2-agent-assist](https://kizouker.github.io/protracker2-agent-assist/)
+**Website:** [kizouker.github.io/paula-lib](https://kizouker.github.io/paula-lib/)
+
+![paula-tui playing a 4-channel MOD, with Diesel dancing in the corner](docs/assets/screenshots/paula-tui.png)
+
+**Try it** (Linux x86_64 or macOS Apple silicon):
+
+```sh
+curl -fsSL https://github.com/kizouker/paula-lib/releases/latest/download/install.sh | sh
+paula-tui path/to/song.mod
+```
+
+More in [paula/README.md](paula/README.md).
 
 <img src="docs/assets/readme/h-goals.svg" alt="Goals" width="100%">
 
