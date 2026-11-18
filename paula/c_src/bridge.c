@@ -150,6 +150,7 @@ void paula_get_cell(int pat, int row, int ch, int *period, int *sample, int *cmd
 	*period = n->period; *sample = n->sample; *cmd = n->command; *param = n->param;
 }
 
+int  paula_get_order(int pos) { return song->header.patternTable[pos & 127]; }
 void paula_set_order(int pos, int pat) { song->header.patternTable[pos & 127] = (uint16_t)pat; }
 void paula_set_song_length(int len) { song->header.songLength = (uint16_t)len; }
 int  paula_get_song_length(void) { return song->header.songLength; }

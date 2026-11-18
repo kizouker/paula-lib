@@ -3,10 +3,12 @@
 //!   paula-play song.mod                 play to the default sound output until the song ends
 //!   paula-play song.mod --wav out.wav   render to a WAV file (no sound card needed)
 //!   paula-play song.mod --raw           write raw s16le stereo PCM to stdout
+//!   paula-play song.mod --events        print one line per player event (row, note, end) to stdout;
+//!                                       renders offline (no sound card), combine with --wav to keep the audio
 //! Options: --seconds N (limit, default 600), --rate HZ (for --wav/--raw, default 44100).
 //! Exit codes: 0 ok, 2 usage, otherwise the Req 9 error code + 10.
 
-use paula::{engine, read_module, wav, Engine, Error};
+use paula::{engine, read_module, wav, Engine, Error, Event, EventKind};
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -24,17 +26,20 @@ struct Args {
     mode: Mode,
     seconds: f64,
     rate: u32,
+    events: bool,
 }
 
-const USAGE: &str = "usage: paula-play <file.mod> [--wav <out.wav> | --raw] [--seconds N] [--rate HZ]";
+const USAGE: &str = "usage: paula-play <file.mod> [--wav <out.wav> | --raw] [--events] [--seconds N] [--rate HZ]";
 
 fn parse_args() -> Result<Args, String> {
     let mut it = std::env::args().skip(1);
     let (mut file, mut mode, mut seconds, mut rate) = (None, Mode::Play, 600.0, 44_100);
+    let mut events = false;
     while let Some(a) = it.next() {
         match a.as_str() {
             "--wav" => mode = Mode::Wav(it.next().ok_or("--wav needs a file name")?.into()),
             "--raw" => mode = Mode::Raw,
+            "--events" => events = true,
             "--seconds" => seconds = it.next().and_then(|s| s.parse().ok()).ok_or("--seconds needs a number")?,
             "--rate" => rate = it.next().and_then(|s| s.parse().ok()).ok_or("--rate needs a number")?,
             "-h" | "--help" => return Err(String::new()),
@@ -43,7 +48,10 @@ fn parse_args() -> Result<Args, String> {
         }
     }
     let file = file.ok_or("missing <file.mod>")?;
-    Ok(Args { file, mode, seconds, rate })
+    if events && matches!(mode, Mode::Raw) {
+        return Err("--events cannot be combined with --raw (both use stdout)".into());
+    }
+    Ok(Args { file, mode, seconds, rate, events })
 }
 
 fn fail(e: Error) -> ExitCode {
@@ -68,8 +76,12 @@ fn main() -> ExitCode {
     };
 
     match args.mode {
+        Mode::Play if args.events => match render_events(&module, args.rate, args.seconds) {
+            Ok(_) => ExitCode::SUCCESS,
+            Err(e) => fail(e),
+        },
         Mode::Wav(out) => {
-            let pcm = match render(&module, args.rate, args.seconds) {
+            let pcm = match if args.events { render_events(&module, args.rate, args.seconds) } else { render(&module, args.rate, args.seconds) } {
                 Ok(p) => p,
                 Err(e) => return fail(e),
             };
@@ -101,6 +113,27 @@ fn render(module: &paula::Module, rate: u32, seconds: f64) -> Result<Vec<i16>, E
     let mut e = Engine::new(rate)?;
     report(&e.load(module)?);
     e.render_song(module, seconds)
+}
+
+/// Render offline and print one line per event to stdout: `<seconds> row|note|end ...`.
+fn render_events(module: &paula::Module, rate: u32, seconds: f64) -> Result<Vec<i16>, Error> {
+    let mut e = Engine::new(rate)?;
+    report(&e.load(module)?);
+    let (pcm, events) = e.render_song_events(seconds)?;
+    let mut out = std::io::stdout().lock();
+    for ev in &events {
+        writeln!(out, "{}", event_line(ev, rate)).map_err(|e| Error::Io(format!("stdout: {e}")))?;
+    }
+    Ok(pcm)
+}
+
+fn event_line(ev: &Event, rate: u32) -> String {
+    let t = ev.frame as f64 / rate as f64;
+    match ev.kind {
+        EventKind::RowStart { position, pattern, row } => format!("{t:.3} row pos={position:02} pattern={pattern:02} row={row:02}"),
+        EventKind::NoteOn { channel, sample, period } => format!("{t:.3} note ch={} sample={sample:02} period={period}", channel + 1),
+        EventKind::SongEnd => format!("{t:.3} end"),
+    }
 }
 
 fn report(r: &paula::LoadReport) {

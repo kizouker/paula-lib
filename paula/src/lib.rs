@@ -2,15 +2,20 @@
 //!
 //! - [`modfile`]: parse and write MOD files in RAM.
 //! - [`engine`]: load a module, play, render PCM, edit cells (one engine per process).
+//! - [`events`]: row, note-on and song-end events reported while rendering.
+//! - [`glossary`]: readable names and meanings for every effect.
 //! - [`wav`]: write rendered PCM as WAV.
 
 pub mod engine;
+pub mod events;
+pub mod glossary;
 pub mod modfile;
 #[cfg(feature = "audio")]
 pub mod output;
 pub mod wav;
 
 pub use engine::{Engine, Error, LoadReport};
+pub use events::{Event, EventKind};
 pub use modfile::{Cell, Module, Sample};
 
 /// Read a MOD from disk into RAM and parse it.

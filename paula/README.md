@@ -32,6 +32,27 @@ paula-play song.mod --wav out.wav --seconds 30 --rate 48000
 paula-tui song.mod                   # space play/stop, arrows scroll, f follow, q quit
 ```
 
+### Events and glossary
+
+```sh
+paula-play song.mod --events                 # print one line per event, no sound card needed
+paula-play song.mod --events --wav out.wav   # same, and keep the audio
+```
+
+Output, one line per event: seconds, then `row pos=.. pattern=.. row=..`, `note ch=.. sample=.. period=..` (channels count from 1) or `end`:
+
+```
+0.000 row pos=00 pattern=00 row=00
+0.000 note ch=1 sample=01 period=428
+0.120 row pos=00 pattern=00 row=01
+```
+
+`--events` cannot be combined with `--raw` (both use stdout).
+
+In Rust, `Engine::render_events(&mut out, &mut events)` fills the audio and appends `Event { frame, kind }` values, where `kind` is `RowStart`, `NoteOn` or `SongEnd` and `frame` is the offset inside `out`. It is pull style: nothing is called back from the render. The engine renders in 16-frame slices (0.36 ms at 44.1 kHz) and looks at the player position after each one, so an event is at most one slice early. `Engine::render_song_events(max_seconds)` renders a whole song with its events. A note next to a glide (`3xx`, `5xx`) is not a note-on, and an `EDx` delay is reported at the row start, not at its delayed tick.
+
+`paula::glossary` holds the effect table (`entries()`, `lookup(cmd, param)`) and `describe(&cell)`, which gives text such as `REPEAT x3` for `E63`.
+
 Binaries end up in `target/release/`. Exit codes: 0 ok, 2 usage error, 10 + the Req 9 error code otherwise (11 invalid argument, 12 out of range, 13 unsupported format, 14 I/O failure, 15 corrupt data, 16 unsupported operation).
 
 ## Tests
@@ -40,7 +61,7 @@ Binaries end up in `target/release/`. Exit codes: 0 ok, 2 usage error, 10 + the 
 cargo test
 ```
 
-The tests need no audio device and download nothing: every MOD is generated in the test. They cover the MOD round trip, corrupt input, API defaults and range checks, onset timing (Req 5.2), bit-identical rendering (Req 5.4), song-end detection with and without pattern loops (`E6x`), and the CLI exit codes.
+The tests need no audio device and download nothing: every MOD is generated in the test. They cover the MOD round trip, corrupt input, API defaults and range checks, onset timing (Req 5.2), the effect glossary and the event stream (`tests/events.rs`), bit-identical rendering (Req 5.4), song-end detection with and without pattern loops (`E6x`), and the CLI exit codes.
 
 ## Limits (v0.1)
 

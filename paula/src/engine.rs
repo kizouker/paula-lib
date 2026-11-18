@@ -5,6 +5,7 @@
 //! `Engine` in another thread waits. Every `Engine::new` resets the module to the
 //! empty state of Req 1.4.
 
+use crate::events::{Event, EventKind, EventState, SLICE_FRAMES};
 use crate::modfile::{Cell, Module, NUM_CHANNELS, NUM_ROWS, MAX_PATTERNS};
 use std::fmt;
 use std::sync::{Condvar, Mutex, OnceLock};
@@ -17,6 +18,7 @@ mod ffi {
         pub fn paula_set_sample(idx0: i32, data: *const i8, len: i32, volume: i32, finetune: i32, loop_start: i32, loop_len: i32) -> i32;
         pub fn paula_set_cell(pat: i32, row: i32, ch: i32, period: i32, sample: i32, cmd: i32, param: i32);
         pub fn paula_get_cell(pat: i32, row: i32, ch: i32, period: *mut i32, sample: *mut i32, cmd: *mut i32, param: *mut i32);
+        pub fn paula_get_order(pos: i32) -> i32;
         pub fn paula_set_order(pos: i32, pat: i32);
         pub fn paula_set_song_length(len: i32);
         pub fn paula_get_song_length() -> i32;
@@ -107,6 +109,7 @@ pub struct LoadReport {
 /// (wrap it in `Arc<Mutex<Engine>>` to share it with a UI thread).
 pub struct Engine {
     rate: u32,
+    ev: EventState,
 }
 
 impl Drop for Engine {
@@ -144,7 +147,7 @@ impl Engine {
         *taken = true;
         drop(taken);
         unsafe { ffi::paula_reset() };
-        Ok(Engine { rate })
+        Ok(Engine { rate, ev: EventState::default() })
     }
 
     pub fn rate(&self) -> u32 {
@@ -188,11 +191,13 @@ impl Engine {
     }
 
     pub fn play(&mut self) {
-        unsafe { ffi::paula_play() }
+        unsafe { ffi::paula_play() };
+        self.ev = EventState::started();
     }
 
     pub fn stop(&mut self) {
-        unsafe { ffi::paula_stop() }
+        unsafe { ffi::paula_stop() };
+        self.ev.active = false;
     }
 
     pub fn is_playing(&self) -> bool {
@@ -209,6 +214,109 @@ impl Engine {
             unsafe { ffi::paula_render(chunk.as_mut_ptr(), (chunk.len() / 2) as i32) };
         }
         Ok(())
+    }
+
+    /// Like [`Engine::render`], and append what happened to `events` (Req 14).
+    ///
+    /// Events come in render order. `Event::frame` is the frame offset inside `out`, counted
+    /// from the first frame of this call. The audio is rendered in slices of
+    /// [`SLICE_FRAMES`] frames, cut at fixed positions since `play`, so an event is at most
+    /// one slice early and the result does not depend on the block size. Nothing is reported
+    /// while playback is stopped, and nothing after the song end event.
+    pub fn render_events(&mut self, out: &mut [i16], events: &mut Vec<Event>) -> Result<(), Error> {
+        if out.len() % 2 != 0 {
+            return Err(Error::InvalidArgument("buffer length must be even (stereo frames)".into()));
+        }
+        if !self.ev.active || !self.is_playing() {
+            return self.render(out);
+        }
+        let total = out.len() / 2;
+        let mut done = 0;
+        while done < total {
+            if self.ev.pending_first {
+                self.ev.pending_first = false;
+                self.row_events(done, self.position(), events);
+            }
+            let n = (SLICE_FRAMES - (self.ev.frames % SLICE_FRAMES as u64) as usize).min(total - done);
+            unsafe { ffi::paula_render(out[done * 2..].as_mut_ptr(), n as i32) };
+            self.ev.frames += n as u64;
+            if self.finish_slice(done, events) {
+                // the song is over: the rest of the block is plain audio
+                done += n;
+                return self.render(&mut out[done * 2..]);
+            }
+            done += n;
+        }
+        Ok(())
+    }
+
+    /// Look at the position after a slice that started at `at`; true when the song ended.
+    fn finish_slice(&mut self, at: usize, events: &mut Vec<Event>) -> bool {
+        let now = self.position();
+        let last = self.ev.last;
+        if !self.is_playing() || self.wrapped(last, now) {
+            self.ev.active = false;
+            events.push(Event { frame: at, kind: EventKind::SongEnd });
+            return true;
+        }
+        if now != last {
+            self.row_events(at, now, events);
+        }
+        false
+    }
+
+    fn row_events(&mut self, at: usize, (pos, row): (u8, u8), events: &mut Vec<Event>) {
+        self.ev.last = (pos, row);
+        let pattern = unsafe { ffi::paula_get_order(pos as i32) } as u8;
+        events.push(Event { frame: at, kind: EventKind::RowStart { position: pos, pattern, row } });
+        for ch in 0..NUM_CHANNELS {
+            if let Ok(c) = self.cell(pattern as usize, row as usize, ch) {
+                // a note next to 3xx or 5xx is a glide target, not a new note
+                if c.period != 0 && c.cmd != 3 && c.cmd != 5 {
+                    events.push(Event {
+                        frame: at,
+                        kind: EventKind::NoteOn { channel: ch as u8, sample: c.sample, period: c.period },
+                    });
+                }
+            }
+        }
+    }
+
+    /// Same rule as [`is_song_end`], read from the engine's own pattern data.
+    fn wrapped(&self, (last_pos, last_row): (u8, u8), (pos, row): (u8, u8)) -> bool {
+        pos < last_pos || (pos == last_pos && row < last_row && !self.row_has_loop(last_pos, last_row))
+    }
+
+    fn row_has_loop(&self, pos: u8, row: u8) -> bool {
+        let pat = unsafe { ffi::paula_get_order(pos as i32) } as usize;
+        (0..NUM_CHANNELS).any(|ch| {
+            self.cell(pat, row as usize, ch)
+                .map(|c| c.cmd == 0xE && (c.param >> 4) == 6 && (c.param & 0xF) != 0)
+                .unwrap_or(false)
+        })
+    }
+
+    /// Play the loaded song from the start and render it until it ends or `max_seconds` pass,
+    /// with the events of [`Engine::render_events`]. Event frames count from the start of the
+    /// returned audio. Audio stops at the song end.
+    pub fn render_song_events(&mut self, max_seconds: f64) -> Result<(Vec<i16>, Vec<Event>), Error> {
+        let max_frames = (max_seconds * self.rate as f64) as usize;
+        let (mut out, mut events) = (Vec::new(), Vec::new());
+        let mut buf = vec![0i16; 1024 * 2];
+        self.play();
+        while out.len() / 2 < max_frames && self.ev.active {
+            let base = out.len() / 2;
+            let first = events.len();
+            self.render_events(&mut buf, &mut events)?;
+            for e in &mut events[first..] {
+                e.frame += base;
+            }
+            out.extend_from_slice(&buf);
+        }
+        self.stop();
+        let end = events.iter().find(|e| e.kind == EventKind::SongEnd).map(|e| e.frame);
+        out.truncate(end.unwrap_or(max_frames).min(max_frames) * 2);
+        Ok((out, events))
     }
 
     pub fn set_bpm(&mut self, bpm: u16) -> Result<(), Error> {
