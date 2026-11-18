@@ -1,0 +1,33 @@
+[package]
+name = "paula"
+version = "0.1.0"
+edition = "2021"
+build = "build.rs"
+description = "Headless API, CLI player and TUI over the unmodified pt2-clone (ProTracker 2.3D) engine"
+license = "BSD-3-Clause"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "paula-play"
+path = "src/bin/paula-play.rs"
+required-features = ["audio"]
+
+[[bin]]
+name = "paula-tui"
+path = "src/bin/paula-tui.rs"
+required-features = ["audio", "tui"]
+
+[features]
+default = ["audio", "tui"]
+audio = ["dep:cpal"]
+tui = ["dep:ratatui"]
+
+[dependencies]
+cpal = { version = "0.15", optional = true }
+ratatui = { version = "0.29", optional = true }
+
+[build-dependencies]
+cc = "1"
