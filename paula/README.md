@@ -5,6 +5,8 @@ A headless API over the unmodified pt2-clone (ProTracker 2.3D) engine, plus two 
 - **paula-play**: play a MOD from the command line, or render it to WAV or raw PCM.
 - **paula-tui**: play a MOD in the terminal and browse its patterns.
 
+![paula-tui playing a 4-channel MOD, with Diesel dancing in the corner](../docs/assets/screenshots/paula-tui.png)
+
 The engine code in `../src/` is compiled as-is. `c_src/bridge.c` turns its audio-device calls into no-ops and adds a pull-style API, so the host decides when to render frames. SDL2 is used only for its header files; libSDL2 is not linked. The song lives in RAM (Req 12): MOD files are parsed and written in Rust (`src/modfile.rs`).
 
 ## Build
