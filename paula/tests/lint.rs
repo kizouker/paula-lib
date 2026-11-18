@@ -174,3 +174,16 @@ fn paula_play_check_and_score_use_the_same_linter_and_compiler() {
     assert_eq!(play(&["--score", "clean.paula.toml"]).status.code(), Some(2));
     std::fs::remove_dir_all(&dir).ok();
 }
+
+#[test]
+fn each_bad_bar_gets_its_own_column() {
+    let src = "[style]\nname = \"t\"\nkey = \"A aeolian\"\nbpm = 90\n\n[progression]\nverse = \"Xm | Am | Ym | Zm\"\n\n[role.kick]\nchannel = 1\nsample = 1\ngroove = \"x...x...x...x...\"\n\n[song]\nform = \"verse 4\"\n";
+    let a = analyze(src, None, &Options::default());
+    let cols: Vec<(usize, usize)> = a.diagnostics.iter().map(|d| (d.line, d.col)).collect();
+    // the value's quote is at column 9: Xm 10, Ym 20, Zm 25
+    assert_eq!(cols, [(7, 10), (7, 20), (7, 25)]);
+    // a multi-line string falls back to the start of the value
+    let ml = src.replace("verse = \"Xm | Am | Ym | Zm\"", "verse = \"\"\"Xm | Am\"\"\"");
+    let a = analyze(&ml, None, &Options::default());
+    assert_eq!(a.diagnostics.iter().map(|d| (d.line, d.col)).collect::<Vec<_>>(), [(7, 9)]);
+}

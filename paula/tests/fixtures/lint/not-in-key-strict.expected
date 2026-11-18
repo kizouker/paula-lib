@@ -1,1 +1,1 @@
-not-in-key-strict.paula.toml:8:9: error: progression.verse bar 4: G# is not in A aeolian
+not-in-key-strict.paula.toml:8:30: error: progression.verse bar 4: G# is not in A aeolian

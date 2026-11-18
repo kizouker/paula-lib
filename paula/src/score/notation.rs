@@ -74,6 +74,9 @@ pub fn parse_register(s: &str) -> Result<(i32, i32), RegisterError> {
 pub fn parse_form(s: &str) -> Result<Vec<(String, u32)>, String> {
     let mut out = Vec::new();
     for part in s.split(',') {
+        if part.trim().is_empty() {
+            return Err("empty section: two commas in a row, or a comma at the start or end".into());
+        }
         let mut it = part.split_whitespace();
         let (Some(name), Some(bars), None) = (it.next(), it.next(), it.next()) else {
             return Err(format!("{:?} must be a section name and a bar count, like \"verse 8\"", part.trim()));
@@ -118,6 +121,19 @@ pub fn parse_progression(s: &str, key: &Key) -> (Vec<Bar>, Vec<BarError>) {
         }
     }
     (bars, errors)
+}
+
+/// Byte offset inside `s` where each bar of a progression starts (its first non-space
+/// character, or the start of the bar if it is empty), in the order `parse_progression` numbers them.
+pub fn bar_offsets(s: &str) -> Vec<usize> {
+    let mut out = Vec::new();
+    let mut start = 0;
+    for part in s.split('|') {
+        let lead = part.len() - part.trim_start().len();
+        out.push(start + if part.trim().is_empty() { 0 } else { lead });
+        start += part.len() + 1;
+    }
+    out
 }
 
 /// "C-1..B-3" for messages.

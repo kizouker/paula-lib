@@ -89,6 +89,18 @@ impl Ctx {
         self.push(Level::Warning, code, offset, message);
     }
 
+    /// Offset of byte `inner` of the string value that starts at `at`, when the source holds
+    /// that value verbatim between one-character quotes (a one-line string without escapes).
+    /// Otherwise `at`, the start of the value.
+    fn inside(&self, at: usize, value: &str, inner: usize) -> usize {
+        let quoted = matches!(self.src.as_bytes().get(at), Some(b'"' | b'\''));
+        if quoted && self.src.get(at + 1..at + 1 + value.len()) == Some(value) {
+            at + 1 + inner
+        } else {
+            at
+        }
+    }
+
     fn errors(&self) -> usize {
         self.out.iter().filter(|(_, d)| d.level == Level::Error).count()
     }
@@ -173,8 +185,11 @@ pub fn analyze(src: &str, base: Option<&Module>, opts: &Options) -> Analysis {
         for (name, sp) in &file.progression {
             let at = sp.span().start;
             let (bars, errors) = notation::parse_progression(sp.get_ref(), key);
+            let offsets = notation::bar_offsets(sp.get_ref());
+            let bar_at = |cx: &Ctx, n: usize| cx.inside(at, sp.get_ref(), offsets[n - 1]);
             for (n, e) in &errors {
-                cx.error("bad-chord", at, format!("progression.{name} bar {n}: {e}"));
+                let pos = bar_at(&cx, *n);
+                cx.error("bad-chord", pos, format!("progression.{name} bar {n}: {e}"));
             }
             if !errors.is_empty() {
                 continue;
@@ -185,7 +200,8 @@ pub fn analyze(src: &str, base: Option<&Module>, opts: &Options) -> Analysis {
                     for tone in chord.tones() {
                         if !key.contains(tone) && seen.insert(tone) {
                             let level = if strict { Level::Error } else { Level::Warning };
-                            cx.push(level, "not-in-key", at, format!("progression.{name} bar {}: {tone} is not in {key}", i + 1));
+                            let pos = bar_at(&cx, i + 1);
+                            cx.push(level, "not-in-key", pos, format!("progression.{name} bar {}: {tone} is not in {key}", i + 1));
                         }
                     }
                 }
@@ -401,7 +417,7 @@ pub fn render_json(file: &str, diags: &[Diagnostic]) -> String {
 /// Shared by `paula-lint` and `paula-play --check`: `<file> [--base kit.mod] [--json] [--strict]`.
 /// Findings go to stdout. Returns the exit code (0 clean, 1 warnings, 2 errors or bad usage).
 pub fn run_cli(prog: &str, args: &[String]) -> u8 {
-    let usage = format!("usage: {prog} <song.paula.toml> [--base <kit.mod>] [--json] [--strict]");
+    let usage = format!("usage: {prog} <song.paula.toml> [--base <kit.mod>] [--json] [--strict]\nexit codes: 0 clean, 1 warnings only, 2 errors or bad usage");
     let (mut file, mut base, mut json, mut strict) = (None, None, false, false);
     let mut it = args.iter();
     while let Some(a) = it.next() {

@@ -58,6 +58,9 @@ fn form_parses_sections_and_bar_counts() {
     assert!(parse_form("intro").is_err());
     assert!(parse_form("intro four").is_err());
     assert!(parse_form("intro 4 5").is_err());
+    for s in ["verse 4,,verse 4", ",verse 4", "verse 4,"] {
+        assert!(parse_form(s).unwrap_err().starts_with("empty section"), "{s}");
+    }
 }
 
 #[test]
