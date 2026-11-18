@@ -11,6 +11,10 @@ publish = false
 path = "src/lib.rs"
 
 [[bin]]
+name = "paula-lint"
+path = "src/bin/paula-lint.rs"
+
+[[bin]]
 name = "paula-play"
 path = "src/bin/paula-play.rs"
 required-features = ["audio"]
@@ -31,7 +35,9 @@ llm = ["dep:ureq"]
 [dependencies]
 cpal = { version = "0.15", optional = true }
 ratatui = { version = "0.29", optional = true }
+serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+toml = "1"
 ureq = { version = "2", default-features = false, features = ["tls"], optional = true }
 
 [build-dependencies]

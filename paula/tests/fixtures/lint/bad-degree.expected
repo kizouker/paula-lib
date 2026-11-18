@@ -1,0 +1,1 @@
+bad-degree.paula.toml:7:21: error: progression.verse bar 3: cannot parse "Vq7": cannot read chord suffix "q7" (try m, maj7, 7, m7, 9, 11, 13, dim, aug, sus2, sus4, m7b5, b9, #9, #11, b13)

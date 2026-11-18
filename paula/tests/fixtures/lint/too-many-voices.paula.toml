@@ -1,0 +1,22 @@
+[style]
+name = "t"
+key = "A aeolian"
+bpm = 90
+
+[progression]
+verse = "Am7 | Fmaj7 | Dm7 | Am9"
+
+[role.kick]
+channel = 1
+sample = 1
+groove = "x...x...x...x..."
+
+[song]
+form = "verse 4"
+
+[role.keys]
+channel = 2
+sample = 5
+register = "C-2..B-3"
+rule = "chord-tones"
+groove = "x...x...x...x..."

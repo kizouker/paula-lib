@@ -1,6 +1,7 @@
 //! paula-tui: play a MOD in the terminal and browse its patterns.
 //!
 //!   paula-tui song.mod
+//!   paula-tui --score song.paula.toml --base kit.mod [--strict]   compile a score onto the samples of kit.mod and load it
 //! Keys: space play/stop · ↑/↓ row · PgUp/PgDn 16 rows · ←/→ song position · f follow · s tracker/spectrum/both · d diesel · q quit
 //!   p ask the model for a pattern (type the request, Enter sends, Esc cancels) · a accept the proposal · r reject it · u undo the last accept
 //! The model call runs on its own thread, so playback and the screen never wait for it. Needs ANTHROPIC_API_KEY (environment or .env).
@@ -63,12 +64,50 @@ struct App {
     last_row: Option<(u8, u8)>,
 }
 
+const USAGE: &str = "usage: paula-tui <file.mod>\n       paula-tui --score <song.paula.toml> --base <kit.mod> [--strict]";
+
+/// The module to show and a label for the status line.
+fn load() -> Result<(paula::Module, String), (String, u8)> {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    let usage = |m: &str| (format!("{m}\n{USAGE}"), 2);
+    let (mut file, mut score, mut base, mut strict) = (None, None, None, false);
+    let mut it = args.iter();
+    while let Some(a) = it.next() {
+        match a.as_str() {
+            "--score" => score = Some(it.next().ok_or_else(|| usage("--score needs a file name"))?.clone()),
+            "--base" => base = Some(it.next().ok_or_else(|| usage("--base needs a file name"))?.clone()),
+            "--strict" => strict = true,
+            s if s.starts_with('-') => return Err(usage(&format!("unknown option {s}"))),
+            s => file = Some(s.to_string()),
+        }
+    }
+    match (file, score, base) {
+        (Some(f), None, None) => read_module(std::path::Path::new(&f)).map(|m| (m, f)).map_err(|e| (e.to_string(), 1)),
+        (None, Some(score), Some(base)) => {
+            let src = std::fs::read_to_string(&score).map_err(|e| (format!("{score}: {e}"), 1))?;
+            let base = read_module(std::path::Path::new(&base)).map_err(|e| (e.to_string(), 1))?;
+            match paula::score::compile_source(&src, &base, strict) {
+                Ok((m, warnings)) => {
+                    eprint!("{}", paula::score::lint::render_text(&score, &warnings));
+                    Ok((m, score))
+                }
+                Err(diags) => Err((paula::score::lint::render_text(&score, &diags).trim_end().to_string(), 2)),
+            }
+        }
+        (None, Some(_), None) => Err(usage("--score needs --base <kit.mod>")),
+        _ => Err(usage("give either <file.mod> or --score <song.paula.toml> --base <kit.mod>")),
+    }
+}
+
 fn main() -> ExitCode {
-    let Some(path) = std::env::args().nth(1) else {
-        eprintln!("usage: paula-tui <file.mod>");
-        return ExitCode::from(2);
+    let (module, label) = match load() {
+        Ok(x) => x,
+        Err((msg, code)) => {
+            eprintln!("{msg}");
+            return ExitCode::from(code);
+        }
     };
-    match run(std::path::Path::new(&path)) {
+    match run(module, &label) {
         Ok(()) => ExitCode::SUCCESS,
         Err(msg) => {
             eprintln!("paula-tui: {msg}");
@@ -77,8 +116,7 @@ fn main() -> ExitCode {
     }
 }
 
-fn run(path: &std::path::Path) -> Result<(), String> {
-    let module = read_module(path).map_err(|e| e.to_string())?;
+fn run(module: paula::Module, label: &str) -> Result<(), String> {
     let rate = paula::output::device_rate()?;
     let mut e = Engine::new(rate).map_err(|e| e.to_string())?;
     let report = e.load(&module).map_err(|e| e.to_string())?;
@@ -86,7 +124,7 @@ fn run(path: &std::path::Path) -> Result<(), String> {
     let _stream = paula::output::start(engine.clone())?;
 
     let status = if report.truncated_samples.is_empty() {
-        format!("loaded {} · {rate} Hz", path.display())
+        format!("loaded {label} · {rate} Hz")
     } else {
         format!("loaded; {} sample(s) cut to the engine limit", report.truncated_samples.len())
     };
