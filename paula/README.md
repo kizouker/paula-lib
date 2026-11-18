@@ -87,6 +87,29 @@ mirror-bars alternate        # flip left-right on every second bar
 
 Moves: `bob`, `hop`, `squash`, `lean-left`, `lean-right`, `mirror`. A beat without a `beat` line is a rest. Errors name the line (for example `line 3: unknown move "moonwalk"`), and the unit tests parse the file, so `cargo test` tells you if an edit broke it. To add a new kind of move, add a variant to `Move` and its pixel mapping in `frame` in `src/diesel.rs`; the test `every_frame_has_the_colours_of_the_source` then checks it loses no pixels.
 
+## Install without building (one command)
+
+On the machine where you want to run it (Linux x86_64 or macOS Apple silicon):
+
+```sh
+curl -fsSL https://github.com/kizouker/paula-lib/releases/latest/download/install.sh | sh
+```
+
+The installer detects the OS and CPU, downloads the matching archive from the latest GitHub Release, checks its SHA-256, puts `paula-play` and `paula-tui` in `~/.local/bin`, and tells you what is still missing (PATH, or the ALSA library on Linux). Then:
+
+```sh
+paula-play path/to/song.mod --wav out.wav   # works without a sound card
+paula-play path/to/song.mod                 # plays to the speakers
+paula-tui  path/to/song.mod
+```
+
+- Options: `PAULA_VERSION=0.1.0` for a specific version, `PAULA_PREFIX=/usr/local` for another install folder.
+- Runtime needs: Linux needs the ALSA library (`libasound2`, normally installed on desktop Ubuntu). SDL2 is not needed at runtime. The Linux build uses the glibc of Ubuntu 22.04, so it runs on 22.04 and newer.
+- Windows: no ready-made build yet.
+- Uninstall: `rm ~/.local/bin/paula-play ~/.local/bin/paula-tui`.
+
+Releases are built on GitHub by `.github/workflows/release.yml` when a tag `paula-v*` is pushed. To pack the same archive on your own machine: `paula/scripts/bundle.sh` (output in `paula/dist/`).
+
 ## Tests
 
 ```sh
