@@ -61,6 +61,17 @@ In Rust, `Engine::render_events(&mut out, &mut events)` fills the audio and appe
 
 In Rust, `Engine::channel_spectra()` returns `Spectra { bands: [[f32; 16]; 4], levels: [f32; 4] }`, all 0.0..=1.0 (bands on a dB scale, -60 dB to full scale; level is the RMS of the channel). Call it between `render` calls. `Engine::channel_state(ch)` gives `(period, volume)` while a channel sounds. Silent channels, volume 0 and a stopped engine give zeros. `paula::spectrum` has the band edges, the FFT and `bar_line`; `paula::spectrum_view::SpectrumWidget` is the ratatui widget (feature `tui`).
 
+#### Levels: RMS, not the mean
+
+An audio signal swings above and below zero. Its **mean** (average) is therefore close to 0 for any sound, loud or quiet, so it says nothing about loudness. The level is the **RMS** (root mean square) instead: square every sample (so negative values count too), take the mean of the squares, then the square root.
+
+```
+mean = (x1 + x2 + … + xN) / N              ≈ 0 for a tone
+RMS  = sqrt((x1² + x2² + … + xN²) / N)     = the signal's energy
+```
+
+Example: a sine wave that peaks at 1.0 has a mean of 0 but an RMS of 1/√2 ≈ 0.707. `levels` multiplies the RMS by √2, so a full-scale sine reads 1.0. That makes the number easy to read as "how close to full volume", and it is clamped to 1.0. The value is linear (0.5 is half the amplitude, about -6 dB). The spectrum bars use a dB scale from -60 dB (empty) to 0 dB (full), because the ear hears loudness roughly logarithmically. The level is measured on 1024 frames per call, about 23 ms at 44.1 kHz, so it follows the beat but not single samples.
+
 How it works: the bridge records what the engine tells the `setVisuals*` hooks (sample pointer, length, period, volume, DMA on/off) and advances a position per channel while rendering. `channel_spectra` rebuilds the next 1024 frames of each channel (sample data stepped at the channel period, linear interpolation, times volume), applies a Hann window and an FFT. The signal is the raw channel before the Amiga output filters and the stereo mix, like the scopes of pt2-clone.
 
 Binaries end up in `target/release/`. Exit codes: 0 ok, 2 usage error, 10 + the Req 9 error code otherwise (11 invalid argument, 12 out of range, 13 unsupported format, 14 I/O failure, 15 corrupt data, 16 unsupported operation).
