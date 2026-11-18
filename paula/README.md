@@ -34,6 +34,31 @@ paula-play song.mod --spectrum       # live 4-channel spectrum bars instead of t
 paula-play song.mod --diesel         # Diesel the mascot dances above the status line
 ```
 
+### Ask a model for a pattern (`llm` feature, on by default)
+
+You are the composer; the model only proposes. Frontends (`paula-play`, `paula-tui`) share one backend inside the library: `paula::llm` (prompt, answer parser, repair loop, Anthropic client), `paula::rules` (MOD rules) and `paula::session` (song, undo, proposals).
+
+**Key.** Get an Anthropic API key and put it in a file called `.env` in the folder you run the program from, or next to the binary:
+
+```sh
+echo 'ANTHROPIC_API_KEY=your-key-here' > .env
+```
+
+`ANTHROPIC_API_KEY` set in the environment wins over `.env`. `.env` is in `.gitignore`; never commit it. The key is only sent to `https://api.anthropic.com` as the `x-api-key` header. It is never printed, logged or written by paula. Your prompt, the sample names and the tempo go to Anthropic with each request. Optional `PAULA_MODEL=<model id>` picks the model (default `claude-sonnet-5-5`).
+
+**TUI.** `paula-tui song.mod`, then `p` and type a request such as `90 BPM 4/4 kick snare hihat`, Enter. The request runs in the background (the music and the screen keep going); the status line shows progress and errors. The proposal appears highlighted in a yellow frame. `a` accepts it as a new pattern at the end of the song (one undo step, `u` undoes it), `r` rejects it and changes nothing. Without a key `p` says so and everything else works.
+
+**CLI.** No interactive accept: `--save` is the accept.
+
+```sh
+paula-play --compose "90 BPM 4/4 kick snare hihat" --base song.mod --save out.mod
+paula-play --compose "90 BPM 4/4 kick snare hihat" --base song.mod --save out.mod --wav out.wav
+```
+
+The base module must have samples; the model can only use those. Exit codes: 11 when the key or the request is missing, 14 when the model cannot be reached or answers with an error, 15 when no valid pattern came back after the first answer and 2 repairs.
+
+How it works: the request holds the MOD rules, the cell text format, the loaded samples (number and name) and the tempo. The model answers with JSON cells `{"row", "ch", "note": "C-2" | "---", "sample": 0-31, "fx": "C20" | "..."}`. Every cell is checked (row < 64, channel < 4, note in the period table, sample loaded, effect `0`-`F` command). Bad cells are listed back to the model, at most 2 times. Build without the network client with `cargo build --no-default-features --features audio,tui`.
+
 ### Events and glossary
 
 ```sh
@@ -127,7 +152,7 @@ Releases are built on GitHub by `.github/workflows/release.yml` when a tag `paul
 cargo test
 ```
 
-The tests need no audio device and download nothing: every MOD is generated in the test. They cover the MOD round trip, corrupt input, API defaults and range checks, onset timing (Req 5.2), the effect glossary and the event stream (`tests/events.rs`), the spectrum (`tests/spectrum.rs`), Diesel (`tests/diesel.rs`), bit-identical rendering (Req 5.4), song-end detection with and without pattern loops (`E6x`), and the CLI exit codes.
+The tests need no audio device and download nothing: every MOD is generated in the test. They cover the MOD round trip, corrupt input, API defaults and range checks, onset timing (Req 5.2), the effect glossary and the event stream (`tests/events.rs`), the spectrum (`tests/spectrum.rs`), Diesel (`tests/diesel.rs`), the model backend with a fake model, no network and no key (`tests/backend.rs`), bit-identical rendering (Req 5.4), song-end detection with and without pattern loops (`E6x`), and the CLI exit codes.
 
 ## Limits (v0.1)
 
