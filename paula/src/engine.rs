@@ -6,6 +6,7 @@
 //! empty state of Req 1.4.
 
 use crate::events::{Event, EventKind, EventState, SLICE_FRAMES};
+use crate::spectrum::{self, Spectra};
 use crate::modfile::{Cell, Module, NUM_CHANNELS, NUM_ROWS, MAX_PATTERNS};
 use std::fmt;
 use std::sync::{Condvar, Mutex, OnceLock};
@@ -32,6 +33,8 @@ mod ffi {
         pub fn paula_get_pos() -> i32;
         pub fn paula_get_row() -> i32;
         pub fn paula_render(out: *mut i16, frames: i32);
+        pub fn paula_channel_state(ch: i32, period: *mut i32, volume: *mut i32) -> i32;
+        pub fn paula_channel_signal(ch: i32, out: *mut f32, n: i32) -> i32;
     }
 }
 
@@ -317,6 +320,30 @@ impl Engine {
         let end = events.iter().find(|e| e.kind == EventKind::SongEnd).map(|e| e.frame);
         out.truncate(end.unwrap_or(max_frames).min(max_frames) * 2);
         Ok((out, events))
+    }
+
+    /// What each of the four channels sounds like now: `SPECTRUM_BANDS` log bands from 50 Hz to
+    /// 10 kHz plus a level per channel, all 0.0..=1.0. Read it between `render` calls (it
+    /// reflects the audio rendered so far). Silent channels, volume 0 and a stopped engine give
+    /// zeros. The signal is the raw channel before the Amiga filters.
+    pub fn channel_spectra(&self) -> Spectra {
+        let mut out = Spectra::default();
+        let mut buf = vec![0f32; spectrum::window_len(self.rate)];
+        for ch in 0..NUM_CHANNELS {
+            let sounding = unsafe { ffi::paula_channel_signal(ch as i32, buf.as_mut_ptr(), buf.len() as i32) } != 0;
+            if sounding {
+                out.bands[ch] = spectrum::analyse(&buf, self.rate);
+                out.levels[ch] = spectrum::level(&buf);
+            }
+        }
+        out
+    }
+
+    /// (period, volume 0..=64) of channel `ch` while it sounds, else `None`.
+    pub fn channel_state(&self, ch: usize) -> Option<(u16, u8)> {
+        let (mut p, mut v) = (0, 0);
+        let on = ch < NUM_CHANNELS && unsafe { ffi::paula_channel_state(ch as i32, &mut p, &mut v) } != 0;
+        on.then_some((p as u16, v as u8))
     }
 
     pub fn set_bpm(&mut self, bpm: u16) -> Result<(), Error> {

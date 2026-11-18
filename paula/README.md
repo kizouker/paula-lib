@@ -29,7 +29,8 @@ paula-play song.mod --wav out.wav    # render to WAV, no sound card needed
 paula-play song.mod --raw | aplay -f S16_LE -c2 -r44100   # raw PCM to stdout (Linux)
 paula-play song.mod --wav out.wav --seconds 30 --rate 48000
 
-paula-tui song.mod                   # space play/stop, arrows scroll, f follow, q quit
+paula-tui song.mod                   # space play/stop, arrows scroll, f follow, s spectrum view, q quit
+paula-play song.mod --spectrum       # live 4-channel spectrum bars instead of the status line
 ```
 
 ### Events and glossary
@@ -53,6 +54,14 @@ In Rust, `Engine::render_events(&mut out, &mut events)` fills the audio and appe
 
 `paula::glossary` holds the effect table (`entries()`, `lookup(cmd, param)`) and `describe(&cell)`, which gives text such as `REPEAT x3` for `E63`.
 
+### Spectrum
+
+`paula-tui`: key `s` cycles tracker / spectrum / both. The spectrum panel shows the four channels side by side, 16 bars each (50 Hz to 10 kHz, log spaced), drawn with `▁▂▃▄▅▆▇█`. `paula-play song.mod --spectrum` redraws one line of bars in place while playing to the speakers; it needs a terminal, and with `--wav`, `--raw` or `--events` it prints a note and is ignored.
+
+In Rust, `Engine::channel_spectra()` returns `Spectra { bands: [[f32; 16]; 4], levels: [f32; 4] }`, all 0.0..=1.0 (bands on a dB scale, -60 dB to full scale; level is the RMS of the channel). Call it between `render` calls. `Engine::channel_state(ch)` gives `(period, volume)` while a channel sounds. Silent channels, volume 0 and a stopped engine give zeros. `paula::spectrum` has the band edges, the FFT and `bar_line`; `paula::spectrum_view::SpectrumWidget` is the ratatui widget (feature `tui`).
+
+How it works: the bridge records what the engine tells the `setVisuals*` hooks (sample pointer, length, period, volume, DMA on/off) and advances a position per channel while rendering. `channel_spectra` rebuilds the next 1024 frames of each channel (sample data stepped at the channel period, linear interpolation, times volume), applies a Hann window and an FFT. The signal is the raw channel before the Amiga output filters and the stereo mix, like the scopes of pt2-clone.
+
 Binaries end up in `target/release/`. Exit codes: 0 ok, 2 usage error, 10 + the Req 9 error code otherwise (11 invalid argument, 12 out of range, 13 unsupported format, 14 I/O failure, 15 corrupt data, 16 unsupported operation).
 
 ## Tests
@@ -61,7 +70,7 @@ Binaries end up in `target/release/`. Exit codes: 0 ok, 2 usage error, 10 + the 
 cargo test
 ```
 
-The tests need no audio device and download nothing: every MOD is generated in the test. They cover the MOD round trip, corrupt input, API defaults and range checks, onset timing (Req 5.2), the effect glossary and the event stream (`tests/events.rs`), bit-identical rendering (Req 5.4), song-end detection with and without pattern loops (`E6x`), and the CLI exit codes.
+The tests need no audio device and download nothing: every MOD is generated in the test. They cover the MOD round trip, corrupt input, API defaults and range checks, onset timing (Req 5.2), the effect glossary and the event stream (`tests/events.rs`), the spectrum (`tests/spectrum.rs`), bit-identical rendering (Req 5.4), song-end detection with and without pattern loops (`E6x`), and the CLI exit codes.
 
 ## Limits (v0.1)
 
