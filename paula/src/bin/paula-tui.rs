@@ -3,7 +3,7 @@
 //!   paula-tui song.mod
 //!   paula-tui --score song.paula.toml --base kit.mod [--strict]   compile a score onto the samples of kit.mod and load it
 //!   paula-tui [--menu [dir]] [--base kit.mod] [--strict]   menu of *.paula.toml scores (examples/ and the current folder, or dir)
-//! Menu keys: ↑/↓ choose · l lint · enter compile and play · w save .mod + .wav next to the score · k choose the base kit · q quit
+//! Menu keys: ↑/↓ choose · l lint · PgUp/PgDn scroll the lint panel · enter compile and play · w save .mod + .wav next to the score · k choose the base kit · q quit
 //! Keys: space play/stop · ↑/↓ row · PgUp/PgDn 16 rows · ←/→ song position · f follow · s tracker/spectrum/both · d diesel · q quit
 //!   p ask the model for a pattern (type the request, Enter sends, Esc cancels) · a accept the proposal · r reject it · u undo the last accept
 //! The model call runs on its own thread, so playback and the screen never wait for it. Needs ANTHROPIC_API_KEY (environment or .env).
@@ -79,7 +79,7 @@ fn load() -> Result<Start, (String, u8)> {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let usage = |m: &str| (format!("{m}\n{USAGE}"), 2);
     let (mut file, mut score, mut base, mut strict) = (None, None, None, false);
-    let (mut menu, mut menu_dir) = (args.is_empty(), None);
+    let (mut menu, mut menu_dir) = (false, None);
     let mut it = args.iter().peekable();
     while let Some(a) = it.next() {
         match a.as_str() {
@@ -96,7 +96,8 @@ fn load() -> Result<Start, (String, u8)> {
             s => file = Some(s.to_string()),
         }
     }
-    if menu || (file.is_none() && score.is_none() && base.is_some()) {
+    // no file and no --score means the menu (also for `--strict` or `--base` alone)
+    if menu || (file.is_none() && score.is_none()) {
         if file.is_some() || score.is_some() {
             return Err(usage("--menu does not combine with a file or --score"));
         }
@@ -173,18 +174,27 @@ fn play_module(terminal: &mut DefaultTerminal, module: paula::Module, label: &st
 }
 
 fn run_menu(dirs: &[std::path::PathBuf], base: Option<std::path::PathBuf>, strict: bool) -> Result<(), String> {
-    // one engine rate per process: the menu renders WAV files at the device rate used for playback
-    let rate = paula::output::device_rate()?;
+    // one engine rate per process: the menu renders WAV files at the device rate used for playback.
+    // Without a sound card the menu still lists, lints and saves (at 44100 Hz); only playback fails.
+    let audio = paula::output::device_rate();
     let mut menu = Menu::new(dirs, base, strict);
+    if let Err(e) = &audio {
+        menu.status = format!("no audio device ({e}); lint and w save still work");
+    }
     let mut terminal = ratatui::init();
-    let result = menu_loop(&mut terminal, &mut menu, rate);
+    let result = menu_loop(&mut terminal, &mut menu, audio);
     ratatui::restore();
     result
 }
 
-fn menu_loop(terminal: &mut DefaultTerminal, menu: &mut Menu, rate: u32) -> Result<(), String> {
+/// Lines scrolled per PgUp/PgDn in the lint panel.
+const LINT_PAGE: u16 = 4;
+
+fn menu_loop(terminal: &mut DefaultTerminal, menu: &mut Menu, audio: Result<u32, String>) -> Result<(), String> {
+    let rate = *audio.as_ref().unwrap_or(&44100);
+    let mut lint_scroll: u16 = 0;
     loop {
-        terminal.draw(|f| draw_menu(f, menu)).map_err(|e| e.to_string())?;
+        terminal.draw(|f| draw_menu(f, menu, lint_scroll)).map_err(|e| e.to_string())?;
         if !event::poll(Duration::from_millis(100)).map_err(|e| e.to_string())? {
             continue;
         }
@@ -192,20 +202,31 @@ fn menu_loop(terminal: &mut DefaultTerminal, menu: &mut Menu, rate: u32) -> Resu
         if k.kind != KeyEventKind::Press {
             continue;
         }
+        // a new lint report starts at its top
+        if !matches!(k.code, KeyCode::PageUp | KeyCode::PageDown) {
+            lint_scroll = 0;
+        }
         match k.code {
             KeyCode::Up => menu.select(-1),
             KeyCode::Down => menu.select(1),
+            KeyCode::PageUp => lint_scroll = lint_scroll.saturating_sub(LINT_PAGE),
+            KeyCode::PageDown => {
+                let n = menu.lint_report().map_or(0, |r| r.diagnostics.len()) as u16;
+                lint_scroll = (lint_scroll + LINT_PAGE).min(n.saturating_sub(1));
+            }
             KeyCode::Char('l') => {
                 menu.lint();
             }
             KeyCode::Char('k') => menu.next_kit(),
             KeyCode::Char('w') => {
                 menu.status = "rendering...".into();
-                terminal.draw(|f| draw_menu(f, menu)).map_err(|e| e.to_string())?;
+                terminal.draw(|f| draw_menu(f, menu, lint_scroll)).map_err(|e| e.to_string())?;
                 let _ = menu.save(rate);
             }
             KeyCode::Enter => {
-                if let Ok(c) = menu.compile() {
+                if let Err(e) = &audio {
+                    menu.status = format!("cannot play: no audio device ({e}); w saves a .wav instead");
+                } else if let Ok(c) = menu.compile() {
                     let label = menu.selected_score().map(|p| p.display().to_string()).unwrap_or_default();
                     if !c.warnings.is_empty() {
                         menu.status = format!("{} warning(s), see the panel", c.warnings.len());
@@ -222,7 +243,7 @@ fn menu_loop(terminal: &mut DefaultTerminal, menu: &mut Menu, rate: u32) -> Resu
     }
 }
 
-fn draw_menu(f: &mut Frame, menu: &Menu) {
+fn draw_menu(f: &mut Frame, menu: &Menu, lint_scroll: u16) {
     let [head, list, panel, foot] = Layout::vertical([Constraint::Length(3), Constraint::Min(4), Constraint::Length(10), Constraint::Length(3)]).areas(f.area());
     let header = Line::from(vec![Span::styled(" scores ", Style::default().fg(Color::Black).bg(CYAN)), Span::raw(format!("  kit: {}", menu.kit().label()))]);
     f.render_widget(Paragraph::new(header).block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(DIM)).title(" paula ")), head);
@@ -240,7 +261,10 @@ fn draw_menu(f: &mut Frame, menu: &Menu) {
     if lines.is_empty() {
         lines.push(Line::from(Span::styled("no *.paula.toml files here; try `paula-tui --menu <folder>`", Style::default().fg(PINK))));
     }
-    f.render_widget(Paragraph::new(lines).block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(DIM))), list);
+    // keep the selected score in view
+    let rows = list.height.saturating_sub(2) as usize;
+    let top = if rows == 0 { 0 } else { menu.selected().saturating_sub(rows - 1) } as u16;
+    f.render_widget(Paragraph::new(lines).scroll((top, 0)).block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(DIM))), list);
 
     let (lint_lines, border) = match menu.lint_report() {
         None => (vec![Line::from(Span::styled("l lints the selected score", Style::default().fg(DIM)))], DIM),
@@ -250,9 +274,13 @@ fn draw_menu(f: &mut Frame, menu: &Menu) {
             if r.has_errors() { PINK } else { Color::Yellow },
         ),
     };
-    f.render_widget(Paragraph::new(lint_lines).block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(border)).title(" lint ")), panel);
+    let title = match menu.lint_report() {
+        Some(r) if r.diagnostics.len() > panel.height.saturating_sub(2) as usize => format!(" lint {}/{} · PgUp/PgDn ", lint_scroll + 1, r.diagnostics.len()),
+        _ => " lint ".to_string(),
+    };
+    f.render_widget(Paragraph::new(lint_lines).scroll((lint_scroll, 0)).block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(border)).title(title)), panel);
 
-    let keys = "↑↓ choose · l lint · enter compile + play · w save .mod + .wav · k base kit · q quit";
+    let keys = "↑↓ choose · l lint · PgUp/PgDn scroll lint · enter compile + play · w save .mod + .wav (w again overwrites) · k base kit · q quit";
     f.render_widget(Paragraph::new(vec![Line::from(Span::styled(keys, Style::default().fg(DIM))), Line::from(menu.status.as_str())]).block(Block::default().borders(Borders::TOP).border_style(Style::default().fg(DIM))), foot);
 }
 

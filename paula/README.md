@@ -51,12 +51,13 @@ cargo run --release --bin paula-tui -- --base kit.mod   # start with a kit file 
 |---|---|
 | `↑` `↓` | choose a score |
 | `l` | lint: findings as `file:line:col: level: message` in a panel |
+| `PgUp` `PgDn` | scroll the lint panel when it has more findings than fit |
 | `enter` | compile and open the player (space plays, `q` returns to the menu) |
-| `w` | save `<name>.mod` and `<name>.wav` next to the score |
+| `w` | save `<name>.mod` and `<name>.wav` next to the score; if they exist, press `w` again to overwrite. It never writes over the chosen kit file |
 | `k` | choose the base kit: the demo kit, `--base`, or a `.mod` file in the listed folders |
 | `q` | quit |
 
-Lint errors block compiling and stay in the panel; warnings do not block (`--strict` makes notes outside the key errors). The menu logic is `paula::menu` and is tested without a terminal or sound card.
+Lint errors block compiling and stay in the panel; warnings do not block (`--strict` makes notes outside the key errors). Without a sound card the menu still lists, lints and saves (WAV at 44100 Hz); only `enter` reports that it cannot play. The menu logic is `paula::menu` and is tested without a terminal or sound card.
 
 ### Ask a model for a pattern (`llm` feature, on by default)
 

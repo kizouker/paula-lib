@@ -75,13 +75,15 @@ pub struct Menu {
     kit: usize,
     strict: bool,
     lint: Option<LintReport>,
+    /// `.mod` path that `save` asked to overwrite; a second `save` of the same score overwrites it
+    pending_overwrite: Option<PathBuf>,
     /// one line for the status bar
     pub status: String,
 }
 
 /// `*.paula.toml` files directly in `dirs` (not recursive), sorted, without duplicates.
 pub fn find_scores(dirs: &[PathBuf]) -> Vec<PathBuf> {
-    find(dirs, |n| n.ends_with(".paula.toml"))
+    find(dirs, |n| n.to_ascii_lowercase().ends_with(".paula.toml"))
 }
 
 /// `*.mod` files directly in `dirs`, sorted, without duplicates.
@@ -123,7 +125,7 @@ impl Menu {
             }
         }
         let status = if scores.is_empty() { "no *.paula.toml files found".to_string() } else { format!("{} score(s)", scores.len()) };
-        Menu { scores, kits, selected: 0, kit, strict, lint: None, status }
+        Menu { scores, kits, selected: 0, kit, strict, lint: None, pending_overwrite: None, status }
     }
 
     pub fn scores(&self) -> &[PathBuf] {
@@ -156,6 +158,7 @@ impl Menu {
         if next != self.selected {
             self.selected = next;
             self.lint = None;
+            self.pending_overwrite = None;
         }
     }
 
@@ -163,6 +166,7 @@ impl Menu {
     pub fn next_kit(&mut self) {
         self.kit = (self.kit + 1) % self.kits.len();
         self.lint = None;
+        self.pending_overwrite = None;
         self.status = format!("kit: {}", self.kit().label());
     }
 
@@ -222,6 +226,10 @@ impl Menu {
     /// Compile and write `<name>.mod` and `<name>.wav` next to the score (`song.paula.toml` gives
     /// `song.mod`, `song.wav`). Rendering uses the engine at `rate` Hz, which must be the rate the
     /// process uses for playback (one rate per process).
+    ///
+    /// It never writes over the chosen kit file. If `<name>.mod` or `<name>.wav` already exists,
+    /// the first call only asks (an `Err` naming the files) and a second call for the same score
+    /// and kit overwrites them.
     pub fn save(&mut self, rate: u32) -> Result<Saved, String> {
         let result = self.try_save(rate);
         match &result {
@@ -234,10 +242,21 @@ impl Menu {
     fn try_save(&mut self, rate: u32) -> Result<Saved, String> {
         let score = self.selected_score().ok_or("no score selected")?.to_path_buf();
         let c = self.try_compile()?;
-        let stem = score.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-        let stem = stem.strip_suffix(".paula.toml").unwrap_or(&stem).to_string();
+        let name = score.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+        let stem = if name.to_ascii_lowercase().ends_with(".paula.toml") { &name[..name.len() - ".paula.toml".len()] } else { &name };
         let mod_path = score.with_file_name(format!("{stem}.mod"));
         let wav_path = score.with_file_name(format!("{stem}.wav"));
+        if let Kit::File(k) = self.kit() {
+            if same_file(k, &mod_path) {
+                return Err(format!("not saved: {} is the chosen kit; pick another kit with k or rename the score", mod_path.display()));
+            }
+        }
+        let existing: Vec<String> = [&mod_path, &wav_path].iter().filter(|p| p.exists()).map(|p| p.display().to_string()).collect();
+        if !existing.is_empty() && self.pending_overwrite.as_ref() != Some(&mod_path) {
+            self.pending_overwrite = Some(mod_path);
+            return Err(format!("{} already exist(s); w again overwrites", existing.join(" and ")));
+        }
+        self.pending_overwrite = None;
         let mut e = Engine::new(rate).map_err(|e| e.to_string())?;
         e.load(&c.module).map_err(|e| e.to_string())?;
         let pcm = e.render_song(&c.module, MAX_SECONDS).map_err(|e| e.to_string())?;
@@ -245,5 +264,13 @@ impl Menu {
         std::fs::write(&mod_path, c.module.to_bytes()).map_err(|e| format!("{}: {e}", mod_path.display()))?;
         std::fs::write(&wav_path, wav::to_bytes(&pcm, rate)).map_err(|e| format!("{}: {e}", wav_path.display()))?;
         Ok(Saved { mod_path, wav_path })
+    }
+}
+
+/// True when `a` and `b` name the same file (compared after resolving links, when both exist).
+fn same_file(a: &Path, b: &Path) -> bool {
+    match (a.canonicalize(), b.canonicalize()) {
+        (Ok(x), Ok(y)) => x == y,
+        _ => a == b,
     }
 }

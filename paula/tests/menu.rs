@@ -143,3 +143,47 @@ fn save_does_not_write_when_the_score_has_errors() {
     assert!(!dir.join("bad-chord.mod").exists());
     assert!(!dir.join("bad-chord.wav").exists());
 }
+
+#[test]
+fn save_asks_before_overwriting_and_writes_on_the_second_w() {
+    let dir = scratch("save-again", &["not-in-key"]);
+    let mut m = Menu::new(&[dir.clone()], None, false);
+    m.save(RATE).unwrap();
+    std::fs::write(dir.join("not-in-key.wav"), b"old").unwrap();
+    let err = m.save(RATE).unwrap_err();
+    assert!(err.contains("w again"), "{err}");
+    assert_eq!(std::fs::read(dir.join("not-in-key.wav")).unwrap(), b"old", "first w does not overwrite");
+    m.save(RATE).unwrap();
+    assert_ne!(std::fs::read(dir.join("not-in-key.wav")).unwrap(), b"old", "second w overwrites");
+    // moving the selection forgets the pending overwrite
+    std::fs::write(dir.join("not-in-key.wav"), b"old").unwrap();
+    m.save(RATE).unwrap_err();
+    m.next_kit();
+    m.next_kit();
+    assert!(m.save(RATE).is_err(), "asks again after the kit changed");
+}
+
+#[test]
+fn save_never_writes_over_the_chosen_kit() {
+    let dir = scratch("save-kit", &["not-in-key"]);
+    let kit = dir.join("not-in-key.mod");
+    let bytes = demo_kit().to_bytes();
+    std::fs::write(&kit, &bytes).unwrap();
+    let mut m = Menu::new(&[dir.clone()], Some(kit.clone()), false);
+    for _ in 0..2 {
+        let err = m.save(RATE).unwrap_err();
+        assert!(err.contains("chosen kit"), "{err}");
+    }
+    assert_eq!(std::fs::read(&kit).unwrap(), bytes);
+    assert!(!dir.join("not-in-key.wav").exists());
+}
+
+#[test]
+fn score_names_match_without_regard_to_case() {
+    let dir = scratch("case", &[]);
+    std::fs::copy(manifest().join("tests/fixtures/lint/not-in-key.paula.toml"), dir.join("Loud.PAULA.TOML")).unwrap();
+    let mut m = Menu::new(&[dir.clone()], None, false);
+    assert_eq!(m.scores().len(), 1);
+    let s = m.save(RATE).unwrap();
+    assert_eq!(s.mod_path, dir.join("Loud.mod"));
+}
