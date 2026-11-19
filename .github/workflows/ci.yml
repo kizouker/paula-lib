@@ -47,6 +47,8 @@ jobs:
           workspaces: |
             crates/pt2-dsp
             crates/pt2-viz
+      - name: Install SoX (tests/convert_sh.rs runs assets/starter-kit/convert.sh)
+        run: brew install sox
       - name: Test pt2-dsp
         run: cargo test --locked
         working-directory: crates/pt2-dsp
