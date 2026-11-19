@@ -8,6 +8,7 @@
 //! - [`diesel`]: the Diesel mascot: SVG pixels, choreography data, dance frames, half-block rendering.
 //! - [`rules`], [`session`], [`llm`]: the backend frontends share: MOD rules, song + undo + proposals, and the LLM prompt/parse/repair/client.
 //! - [`theory`], [`score`]: music theory and the `.paula.toml` score format (parse, lint, compile to a module).
+//! - [`menu`]: state of the `paula-tui` score menu (list, lint, compile, save, kit), testable without a terminal.
 //! - [`wav`]: write rendered PCM as WAV.
 
 pub mod diesel;
@@ -17,6 +18,7 @@ pub mod engine;
 pub mod events;
 pub mod glossary;
 pub mod llm;
+pub mod menu;
 pub mod modfile;
 #[cfg(feature = "audio")]
 pub mod output;

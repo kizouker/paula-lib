@@ -2,12 +2,15 @@
 //!
 //!   paula-tui song.mod
 //!   paula-tui --score song.paula.toml --base kit.mod [--strict]   compile a score onto the samples of kit.mod and load it
+//!   paula-tui [--menu [dir]] [--base kit.mod] [--strict]   menu of *.paula.toml scores (examples/ and the current folder, or dir)
+//! Menu keys: ↑/↓ choose · l lint · enter compile and play · w save .mod + .wav next to the score · k choose the base kit · q quit
 //! Keys: space play/stop · ↑/↓ row · PgUp/PgDn 16 rows · ←/→ song position · f follow · s tracker/spectrum/both · d diesel · q quit
 //!   p ask the model for a pattern (type the request, Enter sends, Esc cancels) · a accept the proposal · r reject it · u undo the last accept
 //! The model call runs on its own thread, so playback and the screen never wait for it. Needs ANTHROPIC_API_KEY (environment or .env).
 
 use paula::diesel::{self, Choreography, Dancer, Image};
 use paula::diesel_view::DieselWidget;
+use paula::menu::Menu;
 use paula::modfile::{note_name, text, Cell, Pattern, NUM_CHANNELS, NUM_ROWS};
 use paula::session::Session;
 use paula::spectrum_view::SpectrumWidget;
@@ -64,16 +67,28 @@ struct App {
     last_row: Option<(u8, u8)>,
 }
 
-const USAGE: &str = "usage: paula-tui <file.mod>\n       paula-tui --score <song.paula.toml> --base <kit.mod> [--strict]";
+const USAGE: &str = "usage: paula-tui <file.mod>\n       paula-tui --score <song.paula.toml> --base <kit.mod> [--strict]\n       paula-tui [--menu [dir]] [--base <kit.mod>] [--strict]";
 
-/// The module to show and a label for the status line.
-fn load() -> Result<(paula::Module, String), (String, u8)> {
+/// What to start: the player on one module, or the score menu.
+enum Start {
+    Play(paula::Module, String),
+    Menu { dirs: Vec<std::path::PathBuf>, base: Option<std::path::PathBuf>, strict: bool },
+}
+
+fn load() -> Result<Start, (String, u8)> {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let usage = |m: &str| (format!("{m}\n{USAGE}"), 2);
     let (mut file, mut score, mut base, mut strict) = (None, None, None, false);
-    let mut it = args.iter();
+    let (mut menu, mut menu_dir) = (args.is_empty(), None);
+    let mut it = args.iter().peekable();
     while let Some(a) = it.next() {
         match a.as_str() {
+            "--menu" => {
+                menu = true;
+                if let Some(d) = it.next_if(|n| !n.starts_with('-')) {
+                    menu_dir = Some(std::path::PathBuf::from(d));
+                }
+            }
             "--score" => score = Some(it.next().ok_or_else(|| usage("--score needs a file name"))?.clone()),
             "--base" => base = Some(it.next().ok_or_else(|| usage("--base needs a file name"))?.clone()),
             "--strict" => strict = true,
@@ -81,15 +96,25 @@ fn load() -> Result<(paula::Module, String), (String, u8)> {
             s => file = Some(s.to_string()),
         }
     }
+    if menu || (file.is_none() && score.is_none() && base.is_some()) {
+        if file.is_some() || score.is_some() {
+            return Err(usage("--menu does not combine with a file or --score"));
+        }
+        let dirs = match menu_dir {
+            Some(d) => vec![d],
+            None => vec!["examples".into(), ".".into()],
+        };
+        return Ok(Start::Menu { dirs, base: base.map(Into::into), strict });
+    }
     match (file, score, base) {
-        (Some(f), None, None) => read_module(std::path::Path::new(&f)).map(|m| (m, f)).map_err(|e| (e.to_string(), 1)),
+        (Some(f), None, None) => read_module(std::path::Path::new(&f)).map(|m| Start::Play(m, f)).map_err(|e| (e.to_string(), 1)),
         (None, Some(score), Some(base)) => {
             let src = std::fs::read_to_string(&score).map_err(|e| (format!("{score}: {e}"), 1))?;
             let base = read_module(std::path::Path::new(&base)).map_err(|e| (e.to_string(), 1))?;
             match paula::score::compile_source(&src, &base, strict) {
                 Ok((m, warnings)) => {
                     eprint!("{}", paula::score::lint::render_text(&score, &warnings));
-                    Ok((m, score))
+                    Ok(Start::Play(m, score))
                 }
                 Err(diags) => Err((paula::score::lint::render_text(&score, &diags).trim_end().to_string(), 2)),
             }
@@ -100,14 +125,18 @@ fn load() -> Result<(paula::Module, String), (String, u8)> {
 }
 
 fn main() -> ExitCode {
-    let (module, label) = match load() {
+    let start = match load() {
         Ok(x) => x,
         Err((msg, code)) => {
             eprintln!("{msg}");
             return ExitCode::from(code);
         }
     };
-    match run(module, &label) {
+    let result = match start {
+        Start::Play(module, label) => run(module, &label),
+        Start::Menu { dirs, base, strict } => run_menu(&dirs, base, strict),
+    };
+    match result {
         Ok(()) => ExitCode::SUCCESS,
         Err(msg) => {
             eprintln!("paula-tui: {msg}");
@@ -118,6 +147,15 @@ fn main() -> ExitCode {
 
 fn run(module: paula::Module, label: &str) -> Result<(), String> {
     let rate = paula::output::device_rate()?;
+    let mut terminal = ratatui::init();
+    let result = play_module(&mut terminal, module, label, rate);
+    ratatui::restore();
+    result
+}
+
+/// Load `module` into the engine, open the audio stream and run the player until the user quits.
+/// The engine and the stream are released before this returns, so the menu can start another one.
+fn play_module(terminal: &mut DefaultTerminal, module: paula::Module, label: &str, rate: u32) -> Result<(), String> {
     let mut e = Engine::new(rate).map_err(|e| e.to_string())?;
     let report = e.load(&module).map_err(|e| e.to_string())?;
     let engine = Arc::new(Mutex::new(e));
@@ -129,12 +167,93 @@ fn run(module: paula::Module, label: &str) -> Result<(), String> {
         format!("loaded; {} sample(s) cut to the engine limit", report.truncated_samples.len())
     };
     let mut app = App { session: Session::new(module), input: None, job: None, engine, view_pos: 0, cursor: 0, follow: true, status, view: View::Tracker, spectra: Spectra::default(), diesel: true, diesel_src: Image::diesel(), dancer: Dancer::new(Choreography::standard()), last_row: None };
-
-    let mut terminal = ratatui::init();
-    let result = event_loop(&mut terminal, &mut app);
-    ratatui::restore();
+    let result = event_loop(terminal, &mut app);
     app.engine.lock().unwrap().stop();
     result
+}
+
+fn run_menu(dirs: &[std::path::PathBuf], base: Option<std::path::PathBuf>, strict: bool) -> Result<(), String> {
+    // one engine rate per process: the menu renders WAV files at the device rate used for playback
+    let rate = paula::output::device_rate()?;
+    let mut menu = Menu::new(dirs, base, strict);
+    let mut terminal = ratatui::init();
+    let result = menu_loop(&mut terminal, &mut menu, rate);
+    ratatui::restore();
+    result
+}
+
+fn menu_loop(terminal: &mut DefaultTerminal, menu: &mut Menu, rate: u32) -> Result<(), String> {
+    loop {
+        terminal.draw(|f| draw_menu(f, menu)).map_err(|e| e.to_string())?;
+        if !event::poll(Duration::from_millis(100)).map_err(|e| e.to_string())? {
+            continue;
+        }
+        let Event::Key(k) = event::read().map_err(|e| e.to_string())? else { continue };
+        if k.kind != KeyEventKind::Press {
+            continue;
+        }
+        match k.code {
+            KeyCode::Up => menu.select(-1),
+            KeyCode::Down => menu.select(1),
+            KeyCode::Char('l') => {
+                menu.lint();
+            }
+            KeyCode::Char('k') => menu.next_kit(),
+            KeyCode::Char('w') => {
+                menu.status = "rendering...".into();
+                terminal.draw(|f| draw_menu(f, menu)).map_err(|e| e.to_string())?;
+                let _ = menu.save(rate);
+            }
+            KeyCode::Enter => {
+                if let Ok(c) = menu.compile() {
+                    let label = menu.selected_score().map(|p| p.display().to_string()).unwrap_or_default();
+                    if !c.warnings.is_empty() {
+                        menu.status = format!("{} warning(s), see the panel", c.warnings.len());
+                    }
+                    if let Err(e) = play_module(terminal, c.module, &label, rate) {
+                        menu.status = format!("player: {e}");
+                    }
+                }
+            }
+            KeyCode::Char('q') | KeyCode::Esc => return Ok(()),
+            KeyCode::Char('c') if k.modifiers.contains(KeyModifiers::CONTROL) => return Ok(()),
+            _ => {}
+        }
+    }
+}
+
+fn draw_menu(f: &mut Frame, menu: &Menu) {
+    let [head, list, panel, foot] = Layout::vertical([Constraint::Length(3), Constraint::Min(4), Constraint::Length(10), Constraint::Length(3)]).areas(f.area());
+    let header = Line::from(vec![Span::styled(" scores ", Style::default().fg(Color::Black).bg(CYAN)), Span::raw(format!("  kit: {}", menu.kit().label()))]);
+    f.render_widget(Paragraph::new(header).block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(DIM)).title(" paula ")), head);
+
+    let mut lines: Vec<Line> = menu
+        .scores()
+        .iter()
+        .enumerate()
+        .map(|(i, p)| {
+            let on = i == menu.selected();
+            let style = if on { Style::default().fg(CYAN).bg(Color::Rgb(0x10, 0x18, 0x28)).add_modifier(Modifier::BOLD) } else { Style::default().fg(DIM) };
+            Line::from(Span::styled(format!("{} {}", if on { "▶" } else { " " }, p.display()), style))
+        })
+        .collect();
+    if lines.is_empty() {
+        lines.push(Line::from(Span::styled("no *.paula.toml files here; try `paula-tui --menu <folder>`", Style::default().fg(PINK))));
+    }
+    f.render_widget(Paragraph::new(lines).block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(DIM))), list);
+
+    let (lint_lines, border) = match menu.lint_report() {
+        None => (vec![Line::from(Span::styled("l lints the selected score", Style::default().fg(DIM)))], DIM),
+        Some(r) if r.diagnostics.is_empty() => (vec![Line::from(Span::styled("no findings", Style::default().fg(GREEN)))], GREEN),
+        Some(r) => (
+            r.diagnostics.iter().zip(r.lines()).map(|(d, l)| Line::from(Span::styled(l, Style::default().fg(if d.level == paula::score::lint::Level::Error { PINK } else { Color::Yellow })))).collect(),
+            if r.has_errors() { PINK } else { Color::Yellow },
+        ),
+    };
+    f.render_widget(Paragraph::new(lint_lines).block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(border)).title(" lint ")), panel);
+
+    let keys = "↑↓ choose · l lint · enter compile + play · w save .mod + .wav · k base kit · q quit";
+    f.render_widget(Paragraph::new(vec![Line::from(Span::styled(keys, Style::default().fg(DIM))), Line::from(menu.status.as_str())]).block(Block::default().borders(Borders::TOP).border_style(Style::default().fg(DIM))), foot);
 }
 
 fn event_loop(terminal: &mut DefaultTerminal, app: &mut App) -> Result<(), String> {
