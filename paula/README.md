@@ -36,6 +36,29 @@ paula-play song.mod --spectrum       # live 4-channel spectrum bars instead of t
 paula-play song.mod --diesel         # Diesel the mascot dances above the status line
 ```
 
+### Score menu (`paula-tui`)
+
+`paula-tui` with no argument (or `paula-tui --menu [folder]`) lists the `*.paula.toml` files in `examples/` and the current folder, so you can go from a score to sound without typing the lint, compile and play commands. It does not need `make-kit`: the base kit is the generated demo kit unless you pick a `.mod` file.
+
+```sh
+cd paula
+cargo run --release --bin paula-tui                     # lists examples/rio-zouk.paula.toml
+cargo run --release --bin paula-tui -- --menu my-scores # a folder of your own scores
+cargo run --release --bin paula-tui -- --base kit.mod   # start with a kit file instead of the demo kit
+```
+
+| Key | Action |
+|---|---|
+| `↑` `↓` | choose a score |
+| `l` | lint: findings as `file:line:col: level: message` in a panel |
+| `PgUp` `PgDn` | scroll the lint panel when it has more findings than fit |
+| `enter` | compile and open the player (space plays, `q` returns to the menu) |
+| `w` | save `<name>.mod` and `<name>.wav` next to the score; if they exist, press `w` again to overwrite. It never writes over the chosen kit file |
+| `k` | choose the base kit: the demo kit, `--base`, or a `.mod` file in the listed folders |
+| `q` | quit |
+
+Lint errors block compiling and stay in the panel; warnings do not block (`--strict` makes notes outside the key errors). Without a sound card the menu still lists, lints and saves (WAV at 44100 Hz); only `enter` reports that it cannot play. The menu logic is `paula::menu` and is tested without a terminal or sound card.
+
 ### Ask a model for a pattern (`llm` feature, on by default)
 
 You are the composer; the model only proposes. Frontends (`paula-play`, `paula-tui`) share one backend inside the library: `paula::llm` (prompt, answer parser, repair loop, Anthropic client), `paula::rules` (MOD rules) and `paula::session` (song, undo, proposals).
