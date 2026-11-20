@@ -46,7 +46,9 @@ pub fn draw(
     let border = if has_errors { pink() } else if clean { green() } else { dim() };
     egui::Frame::group(ui.style()).stroke(egui::Stroke::new(1.0_f32, border)).show(ui, |ui| {
         ui.set_min_height(120.0);
+        ui.set_min_width(ui.available_width());
         ScrollArea::vertical()
+            .auto_shrink([false, true])
             .vertical_scroll_offset(app.lint_scroll as f32 * 18.0)
             .show(ui, |ui| {
             if diagnostics.is_empty() {

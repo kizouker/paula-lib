@@ -39,6 +39,9 @@ pub struct PlayerState {
     pub ask_input: String,
     pub llm_in_flight: bool,
     pub llm_progress: Option<String>,
+    /// (song position, row) the tracker was last scrolled to; the view scrolls again only when
+    /// this changes, so the mouse wheel is free in between
+    pub scrolled_to: Option<(u8, usize)>,
 }
 
 impl PlayerState {
@@ -61,7 +64,7 @@ impl PlayerState {
             session, label, rate, view_pos: 0, cursor: 0, follow: true, view: ViewMode::Tracker,
             status, spectra: Spectra::default(), engine, audio_available,
             audio_error: None, ask_open: false, ask_input: String::new(),
-            llm_in_flight: false, llm_progress: None,
+            llm_in_flight: false, llm_progress: None, scrolled_to: None,
         })
     }
 
@@ -88,7 +91,30 @@ impl PlayerState {
         self.view_pos = 0;
         self.cursor = 0;
         self.follow = true;
+        self.scrolled_to = None;
         Ok(())
+    }
+
+    /// Row to scroll the tracker to this frame: the cursor row, once each time the shown
+    /// position or the cursor changes (playback with follow on, ↑↓, PgUp/PgDn, ←→).
+    pub fn take_scroll_target(&mut self) -> Option<usize> {
+        let now = (self.view_pos, self.cursor);
+        if self.scrolled_to == Some(now) {
+            return None;
+        }
+        self.scrolled_to = Some(now);
+        Some(self.cursor)
+    }
+
+    /// The row the engine is playing, when it plays the song position on screen.
+    pub fn playing_row(&self) -> Option<usize> {
+        let engine = self.engine.as_ref()?;
+        let e = engine.lock().unwrap();
+        if !e.is_playing() {
+            return None;
+        }
+        let (pos, row) = e.position();
+        (pos == self.view_pos).then_some((row as usize).min(NUM_ROWS - 1))
     }
 
     pub fn open_ask(&mut self) {
@@ -266,6 +292,19 @@ mod tests {
         assert_eq!(ViewMode::Tracker.cycle(), ViewMode::Spectrum);
         assert_eq!(ViewMode::Spectrum.cycle(), ViewMode::Both);
         assert_eq!(ViewMode::Both.cycle(), ViewMode::Tracker);
+    }
+
+    #[test]
+    fn tracker_scrolls_once_per_cursor_change() {
+        let mut player = PlayerState::new(Module::empty(), "test", 44100, false).unwrap();
+        assert_eq!(player.take_scroll_target(), Some(0), "first frame scrolls to the cursor");
+        assert_eq!(player.take_scroll_target(), None, "no change: the wheel is free");
+        player.step_row(16);
+        assert_eq!(player.take_scroll_target(), Some(16));
+        assert_eq!(player.take_scroll_target(), None);
+        player.step_row(1);
+        assert_eq!(player.take_scroll_target(), Some(17));
+        assert_eq!(player.playing_row(), None, "silent player plays nothing");
     }
 
     #[test]
