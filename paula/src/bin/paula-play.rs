@@ -12,7 +12,7 @@
 //!   --compose "90 BPM 4/4 kick snare hihat" [--base song.mod] --save out.mod [--wav out.wav]
 //!                                       ask the model for one new pattern, append it to the base module
 //!                                       (an empty one without --base) and write the result to --save.
-//!                                       Needs ANTHROPIC_API_KEY (environment or .env). --save is the accept.
+//!                                       Needs MODEL_API_KEY (Meta Muse) or ANTHROPIC_API_KEY (environment or .env). --save is the accept.
 //!   --check song.paula.toml [--base kit.mod] [--json] [--strict]
 //!                                       lint a score (same as paula-lint); exit 0 clean, 1 warnings, 2 errors
 //!   --score song.paula.toml --base kit.mod [--save out.mod] [--wav out.wav] [--strict]

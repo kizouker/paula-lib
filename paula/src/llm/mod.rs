@@ -1,4 +1,5 @@
-//! LLM backend: prompt builder, answer parser, repair loop, and (feature `llm`) the Anthropic client.
+//! LLM backend: prompt builder, answer parser, repair loop, and (feature `llm`) the Messages client
+//! for Meta Model API (Muse, default) and Anthropic.
 //! The model only proposes; a validated answer becomes a `Proposal` the user accepts or rejects.
 
 #[cfg(feature = "llm")]
@@ -19,8 +20,10 @@ pub const MAX_RETRIES: usize = 2;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ModelError {
-    /// no `ANTHROPIC_API_KEY` in the environment or a `.env` file
+    /// no `MODEL_API_KEY` or `ANTHROPIC_API_KEY` in the environment or a `.env` file
     NoKey,
+    /// no usable provider setting (missing key for the chosen provider, unknown `PAULA_PROVIDER`)
+    Config(String),
     /// the server answered with an error status
     Http { status: u16, message: String },
     Network(String),
@@ -32,7 +35,8 @@ pub enum ModelError {
 impl fmt::Display for ModelError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ModelError::NoKey => write!(f, "no ANTHROPIC_API_KEY (set it in the environment or in a .env file)"),
+            ModelError::NoKey => write!(f, "{}", key::ConfigError::NoKey(None)),
+            ModelError::Config(m) => write!(f, "{m}"),
             ModelError::Http { status, message } => write!(f, "the model API answered {status}: {message}"),
             ModelError::Network(m) => write!(f, "cannot reach the model API: {m}"),
             ModelError::BadResponse(m) => write!(f, "unexpected response from the model API: {m}"),
@@ -43,7 +47,7 @@ impl fmt::Display for ModelError {
 
 impl std::error::Error for ModelError {}
 
-/// Something that turns a conversation into one text answer. The real one calls the Anthropic API; tests use a fake.
+/// Something that turns a conversation into one text answer. The real one calls Meta Model API or Anthropic; tests use a fake.
 pub trait Model {
     fn complete(&mut self, system: &str, messages: &[Message]) -> Result<String, ModelError>;
 }

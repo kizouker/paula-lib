@@ -353,3 +353,78 @@ mod wire {
         assert_eq!(error_message("gateway down"), "gateway down");
     }
 }
+
+// ---- provider choice: Meta Muse first, Anthropic as the other option (no network) ----
+
+mod provider {
+    use paula::llm::key::{choose, find_named_key, ApiKey, Auth, ConfigError, Inputs, Provider, META_KEY_VAR};
+
+    fn k(s: &str) -> Option<ApiKey> {
+        ApiKey::new(s)
+    }
+
+    #[test]
+    fn meta_is_chosen_when_its_key_is_there() {
+        let c = choose(Inputs { meta_key: k("m"), anthropic_key: k("a"), ..Default::default() }).unwrap();
+        assert_eq!(c.provider, Provider::Meta);
+        assert_eq!(c.key.expose(), "m");
+        assert_eq!(c.model, "muse-spark-1.3");
+        assert_eq!(c.url, "https://api.meta.ai/v1/messages");
+        assert_eq!(Provider::Meta.auth(), Auth::Bearer);
+    }
+
+    #[test]
+    fn anthropic_is_used_when_only_its_key_is_there() {
+        let c = choose(Inputs { anthropic_key: k("a"), ..Default::default() }).unwrap();
+        assert_eq!(c.provider, Provider::Anthropic);
+        assert_eq!(c.model, "claude-sonnet-5-5");
+        assert_eq!(c.url, "https://api.anthropic.com/v1/messages");
+        assert_eq!(Provider::Anthropic.auth(), Auth::XApiKey);
+    }
+
+    #[test]
+    fn paula_provider_wins_and_needs_its_own_key() {
+        let c = choose(Inputs { provider: Some("Anthropic".into()), meta_key: k("m"), anthropic_key: k("a"), ..Default::default() }).unwrap();
+        assert_eq!(c.provider, Provider::Anthropic);
+        let e = choose(Inputs { provider: Some("anthropic".into()), meta_key: k("m"), ..Default::default() }).unwrap_err();
+        assert_eq!(e, ConfigError::NoKey(Some(Provider::Anthropic)));
+        assert!(e.to_string().contains("ANTHROPIC_API_KEY"), "{e}");
+        let e = choose(Inputs { provider: Some("openai".into()), meta_key: k("m"), ..Default::default() }).unwrap_err();
+        assert!(matches!(e, ConfigError::UnknownProvider(_)));
+        // empty counts as unset
+        assert_eq!(choose(Inputs { provider: Some(" ".into()), meta_key: k("m"), ..Default::default() }).unwrap().provider, Provider::Meta);
+    }
+
+    #[test]
+    fn no_key_names_both_variables() {
+        let e = choose(Inputs::default()).unwrap_err();
+        let msg = e.to_string();
+        assert!(msg.contains("MODEL_API_KEY") && msg.contains("ANTHROPIC_API_KEY"), "{msg}");
+    }
+
+    #[test]
+    fn model_and_url_can_be_overridden() {
+        let c = choose(Inputs { meta_key: k("m"), model: Some("muse-wonder-1.0".into()), url: Some("http://127.0.0.1:9/v1/messages".into()), ..Default::default() }).unwrap();
+        assert_eq!(c.model, "muse-wonder-1.0");
+        assert_eq!(c.url, "http://127.0.0.1:9/v1/messages");
+    }
+
+    #[test]
+    fn meta_key_is_read_from_env_files_too() {
+        let d = super::scratch_dir("key-meta");
+        std::fs::write(d.join(".env"), "ANTHROPIC_API_KEY=a\nMODEL_API_KEY=from-file\n").unwrap();
+        assert_eq!(find_named_key(META_KEY_VAR, None, &[d]).unwrap().expose(), "from-file");
+    }
+
+    #[cfg(feature = "llm")]
+    #[test]
+    fn headers_carry_the_key_the_way_each_provider_wants() {
+        use paula::llm::client::headers;
+        let h = headers(Auth::Bearer, "sk");
+        assert!(h.contains(&("authorization", "Bearer sk".to_string())));
+        assert!(!h.iter().any(|(n, _)| *n == "x-api-key"));
+        let h = headers(Auth::XApiKey, "sk");
+        assert!(h.contains(&("x-api-key", "sk".to_string())));
+        assert!(!h.iter().any(|(n, _)| *n == "authorization"));
+    }
+}

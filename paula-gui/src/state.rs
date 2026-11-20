@@ -307,8 +307,8 @@ impl AppState {
                 } else if player.module().samples.iter().all(|sample| sample.data.is_empty()) {
                     player.status = "the module has no samples; load a module with samples".to_string();
                     player.ask_open = false;
-                } else if paula::llm::key::load_key().is_none() {
-                    player.status = "no ANTHROPIC_API_KEY (set it in the environment or in a .env file); everything else works".to_string();
+                } else if paula::llm::key::load_config().is_err() {
+                    player.status = format!("{}; everything else works", paula::llm::ModelError::NoKey);
                     player.ask_open = false;
                 } else {
                     let module = player.module().clone();

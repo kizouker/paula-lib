@@ -61,15 +61,25 @@ Lint errors block compiling and stay in the panel; warnings do not block (`--str
 
 ### Ask a model for a pattern (`llm` feature, on by default)
 
-You are the composer; the model only proposes. Frontends (`paula-play`, `paula-tui`) share one backend inside the library: `paula::llm` (prompt, answer parser, repair loop, Anthropic client), `paula::rules` (MOD rules) and `paula::session` (song, undo, proposals).
+You are the composer; the model only proposes. Frontends (`paula-play`, `paula-tui`) share one backend inside the library: `paula::llm` (prompt, answer parser, repair loop, Messages client for Meta Muse and Anthropic), `paula::rules` (MOD rules) and `paula::session` (song, undo, proposals).
 
-**Key.** Get an Anthropic API key and put it in a file called `.env` in the folder you run the program from, or next to the binary:
+**Key.** paula talks to [Meta Model API](https://dev.meta.ai/docs/coding-agents) (Muse, the default) or Anthropic; both use the Messages format. Put the key in a file called `.env` in the folder you run the program from, or next to the binary:
 
 ```sh
-echo 'ANTHROPIC_API_KEY=your-key-here' > .env
+echo 'MODEL_API_KEY=your-meta-key' > .env        # Meta Muse, model muse-spark-1.3
+# or
+echo 'ANTHROPIC_API_KEY=your-anthropic-key' > .env  # Anthropic, model claude-sonnet-5-5
 ```
 
-`ANTHROPIC_API_KEY` set in the environment wins over `.env`. `.env` is in `.gitignore`; never commit it. The key is only sent to `https://api.anthropic.com` as the `x-api-key` header. It is never printed, logged or written by paula. Your prompt, the sample names and the tempo go to Anthropic with each request. Optional `PAULA_MODEL=<model id>` picks the model (default `claude-sonnet-5-5`).
+| Variable | Meaning |
+|---|---|
+| `MODEL_API_KEY` | Meta key, sent to `https://api.meta.ai/v1/messages` as `Authorization: Bearer` |
+| `ANTHROPIC_API_KEY` | Anthropic key, sent to `https://api.anthropic.com/v1/messages` as `x-api-key` |
+| `PAULA_PROVIDER` | `meta` or `anthropic`; without it Meta is used when its key is found, else Anthropic |
+| `PAULA_MODEL` | model id; default `muse-spark-1.3` (Meta) or `claude-sonnet-5-5` (Anthropic) |
+| `PAULA_LLM_URL` | another endpoint for the chosen provider (proxy, test server) |
+
+A key set in the environment wins over `.env`; the `PAULA_*` settings are read from the environment only. `.env` is in `.gitignore`; never commit it. The key is never printed, logged or written by paula. Your prompt, the sample names and the tempo go to the chosen provider with each request.
 
 **TUI.** `paula-tui song.mod`, then `p` and type a request such as `90 BPM 4/4 kick snare hihat`, Enter. The request runs in the background (the music and the screen keep going); the status line shows progress and errors. The proposal appears highlighted in a yellow frame. `a` accepts it as a new pattern at the end of the song (one undo step, `u` undoes it), `r` rejects it and changes nothing. Without a key `p` says so and everything else works.
 
