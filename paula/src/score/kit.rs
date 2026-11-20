@@ -69,3 +69,108 @@ pub fn demo_kit() -> Module {
     put(&mut m, 5, "keys", keys, 40, true);
     m
 }
+
+/// Rate a sample plays at for note C-2 (ProTracker's reference).
+pub const C2_RATE: f64 = 8363.0;
+
+/// A sound for one kit slot.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct KitSound {
+    /// slot 1..=31
+    pub slot: usize,
+    /// up to 22 characters, shown in the tracker
+    pub name: String,
+    /// 8-bit signed samples, already at C2_RATE and in tune (see `retune`)
+    pub data: Vec<i8>,
+    pub volume: u8,
+}
+
+/// Real pitch of a note name such as `G3`, `Ab1`, `C#4`, in semitones from C3.
+/// C3 (about 131 Hz) is what a tuned sample plays at note C-2.
+pub fn semitones_from_c3(note: &str) -> Option<i32> {
+    let n = note.trim();
+    let mut chars = n.chars();
+    let letter = chars.next()?.to_ascii_uppercase();
+    let base = match letter {
+        'C' => 0,
+        'D' => 2,
+        'E' => 4,
+        'F' => 5,
+        'G' => 7,
+        'A' => 9,
+        'B' => 11,
+        _ => return None,
+    };
+    let rest: String = chars.collect();
+    let (acc, oct) = match rest.chars().next()? {
+        '#' => (1, &rest[1..]),
+        'b' => (-1, &rest[1..]),
+        _ => (0, rest.as_str()),
+    };
+    let octave: i32 = oct.parse().ok()?;
+    Some((octave - 3) * 12 + base + acc)
+}
+
+/// Resample `data` (recorded at `rate` Hz, real pitch `root` semitones from C3, or `None` for
+/// drums) so that it plays at its own pitch for drums, or exactly C3 at note C-2 for pitched
+/// sounds, so every note name in a score means the same pitch for every instrument.
+/// Linear interpolation; when it shortens the sound, a moving average first keeps aliasing down.
+pub fn retune(data: &[i8], rate: u32, root: Option<i32>) -> Vec<i8> {
+    let shift = root.map_or(1.0, |s| 2f64.powf(s as f64 / 12.0));
+    // output samples per input sample
+    let factor = C2_RATE / rate as f64 * shift;
+    if data.is_empty() || (factor - 1.0).abs() < 1e-9 {
+        return data.to_vec();
+    }
+    let src: Vec<f64> = if factor < 1.0 {
+        let w = (1.0 / factor).ceil() as usize;
+        (0..data.len())
+            .map(|i| {
+                let lo = i.saturating_sub(w / 2);
+                let hi = (i + w / 2 + 1).min(data.len());
+                data[lo..hi].iter().map(|&v| v as f64).sum::<f64>() / (hi - lo) as f64
+            })
+            .collect()
+    } else {
+        data.iter().map(|&v| v as f64).collect()
+    };
+    let out_len = ((data.len() as f64) * factor).round() as usize;
+    (0..out_len)
+        .map(|j| {
+            let x = j as f64 / factor;
+            let i = x.floor() as usize;
+            let t = x - i as f64;
+            let a = src[i.min(src.len() - 1)];
+            let b = src[(i + 1).min(src.len() - 1)];
+            (a + (b - a) * t).round().clamp(-128.0, 127.0) as i8
+        })
+        .collect()
+}
+
+/// `base` with `sounds` put into their slots (no loop, so a one-shot sound decays naturally).
+/// Slots not named keep what `base` has.
+pub fn with_sounds(mut base: Module, sounds: &[KitSound]) -> Result<Module, String> {
+    for s in sounds {
+        if !(1..=31).contains(&s.slot) {
+            return Err(format!("slot {} is not 1..31", s.slot));
+        }
+        if s.data.len() > 0x1FFFE {
+            return Err(format!("slot {}: {} samples is over the MOD limit of 131070", s.slot, s.data.len()));
+        }
+        let smp = &mut base.samples[s.slot - 1];
+        smp.name = [0; 22];
+        let name = s.name.as_bytes();
+        smp.name[..name.len().min(22)].copy_from_slice(&name[..name.len().min(22)]);
+        // MOD lengths are in words: keep it even
+        let mut data = s.data.clone();
+        if data.len() % 2 == 1 {
+            data.push(0);
+        }
+        smp.data = data;
+        smp.volume = s.volume.min(64);
+        smp.finetune = 0;
+        smp.loop_start = 0;
+        smp.loop_len = 2;
+    }
+    Ok(base)
+}

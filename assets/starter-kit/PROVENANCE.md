@@ -34,3 +34,17 @@ A SoX conversion (`convert.sh`, with TPDF dither) is prepared but has not replac
 ## Not included on purpose
 
 `Larm_Base_Kick_RAÅ.wav`: recording situation not described here yet. `MUVA61_Uppgift3_Larm_Kick.wav` is stated by Rickard to be his own; how it was made is unknown.
+
+## Added 2026-11-21 (issue #68), own recordings, confirmed by Rickard
+
+Converted earlier with SoX (`convert.sh`, no dither, gain -0.3 dB) to mono 8-bit 8363 Hz; the originals were not changed.
+
+| Slot | File | Instrument | Original file | Note |
+|---|---|---|---|---|
+| 1 | `01_kick_larm.wav` | Kick | `MUVA61_Uppgift3_Larm_Kick.wav` (Rickard's MUVA61 course task) | drum, no pitch |
+| 5 | `05_piano_g3.wav` | Piano, one note G3 (about 197 Hz) | cut at 47.12 s from Rickard's own piano recording, two Shure B54 microphones, L and R summed to mono (`5 L Piano - _shure_b54_1.wav`, `6 R Piano - __shure_b54_1.wav`) | `make-kit` retunes it with `@G3` |
+
+`04_bass.wav` (Epiphone SG, Ab1, about 52 Hz) is retuned with `@Ab1`.
+
+Build the kit with these sounds (from `paula/`):
+`cargo run --release --example make-kit -- kit.mod --from 1=../assets/starter-kit/01_kick_larm.wav --from 4=../assets/starter-kit/04_bass.wav@Ab1 --from 5=../assets/starter-kit/05_piano_g3.wav@G3`
