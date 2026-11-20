@@ -122,12 +122,16 @@ pub fn draw(
         ui.label(RichText::new(slots.join("  ")).color(green()).monospace());
     }
 
+    let scroll_to = match mode {
+        ViewMode::Spectrum => None,
+        _ => app.player.as_mut().and_then(|player| player.take_scroll_target()),
+    };
     if let Some(player) = app.player.as_ref() {
         match player.view {
-            ViewMode::Tracker => draw_tracker(ui, player),
+            ViewMode::Tracker => draw_tracker(ui, player, scroll_to),
             ViewMode::Spectrum => super::spectrum::draw(ui, &player.spectra),
             ViewMode::Both => {
-                draw_tracker(ui, player);
+                draw_tracker(ui, player, scroll_to);
                 ui.separator();
                 super::spectrum::draw(ui, &player.spectra);
             }
@@ -144,8 +148,15 @@ pub fn draw(
     ui.label(RichText::new(status).color(dim()).monospace());
 }
 
-fn draw_tracker(ui: &mut Ui, player: &crate::player::PlayerState) {
-    ScrollArea::vertical().show(ui, |ui| {
+/// Row backgrounds, as in paula-tui.
+const PLAYING_BG: (u8, u8, u8) = (0x20, 0x10, 0x30);
+const CURSOR_BG: (u8, u8, u8) = (0x10, 0x18, 0x28);
+
+/// The 64 rows of the shown pattern. The playing row and the cursor row are highlighted;
+/// `scroll_to` (set once per cursor change) brings that row to the middle of the view.
+fn draw_tracker(ui: &mut Ui, player: &crate::player::PlayerState, scroll_to: Option<usize>) {
+    let playing_row = if player.session.proposal().is_none() { player.playing_row() } else { None };
+    ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
         let proposal = player.session.proposal();
         let pattern = if proposal.is_none() {
             player.module().order[player.view_pos as usize % player.module().song_len as usize] as usize
@@ -175,7 +186,20 @@ fn draw_tracker(ui: &mut Ui, player: &crate::player::PlayerState) {
                 let note = if formatted.starts_with("---") { dim() } else { cyan() };
                 job.append(&formatted, 0.0, egui::TextFormat { font_id: egui::FontId::monospace(13.0), color: note, ..Default::default() });
             }
-            ui.add(egui::Label::new(job).wrap());
+            let fill = if playing_row == Some(row) {
+                super::rgb(PLAYING_BG)
+            } else if row == player.cursor {
+                super::rgb(CURSOR_BG)
+            } else {
+                egui::Color32::TRANSPARENT
+            };
+            let shown_row = egui::Frame::default().fill(fill).show(ui, |ui| {
+                ui.set_min_width(ui.available_width());
+                ui.add(egui::Label::new(job).extend());
+            });
+            if scroll_to == Some(row) {
+                shown_row.response.scroll_to_me(Some(egui::Align::Center));
+            }
         }
     });
 }
