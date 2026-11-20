@@ -428,3 +428,14 @@ mod provider {
         assert!(!h.iter().any(|(n, _)| *n == "authorization"));
     }
 }
+
+#[cfg(feature = "llm")]
+#[test]
+fn ipv4_addresses_are_tried_before_ipv6() {
+    use std::net::SocketAddr;
+    let v6: SocketAddr = "[2a03:2880::2]:443".parse().unwrap();
+    let v4a: SocketAddr = "31.13.72.8:443".parse().unwrap();
+    let v4b: SocketAddr = "10.0.0.1:443".parse().unwrap();
+    let out = paula::llm::client::ipv4_first(vec![v6, v4a, v4b]).unwrap();
+    assert_eq!(out, vec![v4a, v4b, v6]);
+}
