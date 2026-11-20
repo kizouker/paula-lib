@@ -26,6 +26,28 @@ paula-tui path/to/song.mod
 
 More in [paula/README.md](paula/README.md).
 
+## paula-mcp
+
+Build and run the stdio Model Context Protocol server:
+
+```sh
+cargo build --release --locked --manifest-path paula-mcp/Cargo.toml
+paula-mcp/target/release/paula-mcp
+```
+
+Example MCP client configuration (run the server from the repository root):
+
+```json
+{
+  "mcpServers": {
+    "paula": {
+      "command": "cargo",
+      "args": ["run", "--locked", "--manifest-path", "paula-mcp/Cargo.toml"]
+    }
+  }
+}
+```
+
 <img src="docs/assets/readme/h-goals.svg" alt="Goals" width="100%">
 
 - **Creative co-pilot, not a jukebox.** The agent produces pattern data you can edit, never flat audio renders or copies of existing songs.
