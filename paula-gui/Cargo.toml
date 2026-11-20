@@ -6,7 +6,7 @@ publish = false
 
 [dependencies]
 paula = { path = "../paula", default-features = false, features = ["audio"] }
-eframe = { version = "0.31", default-features = false, features = ["glow", "default_fonts"] }
+eframe = { version = "0.31", default-features = false, features = ["glow", "default_fonts", "x11", "wayland"] }
 egui = "0.31"
 rfd = { version = "0.15", default-features = false, features = ["xdg-portal"] }
 cpal = "0.15"
