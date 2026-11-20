@@ -2,6 +2,8 @@ use crate::audio::AudioBackend;
 use paula::modfile::NUM_ROWS;
 use paula::{Engine, LoadReport, Module, Spectra};
 use std::sync::{Arc, Mutex};
+use paula::session::Session;
+use paula::llm::{Model, Tempo};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ViewMode {
@@ -21,7 +23,7 @@ impl ViewMode {
 }
 
 pub struct PlayerState {
-    pub module: Module,
+    pub session: Session,
     pub label: String,
     pub rate: u32,
     pub view_pos: u8,
@@ -33,6 +35,10 @@ pub struct PlayerState {
     pub engine: Option<Arc<Mutex<Engine>>>,
     pub audio_available: bool,
     pub audio_error: Option<String>,
+    pub ask_open: bool,
+    pub ask_input: String,
+    pub llm_in_flight: bool,
+    pub llm_progress: Option<String>,
 }
 
 impl PlayerState {
@@ -50,12 +56,16 @@ impl PlayerState {
             format!("loaded; {} sample(s) cut to the engine limit", report.truncated_samples.len())
         };
         let label = label;
+        let session = Session::new(module.clone());
         Ok(Self {
-            module, label, rate, view_pos: 0, cursor: 0, follow: true, view: ViewMode::Tracker,
+            session, label, rate, view_pos: 0, cursor: 0, follow: true, view: ViewMode::Tracker,
             status, spectra: Spectra::default(), engine, audio_available,
-            audio_error: None,
+            audio_error: None, ask_open: false, ask_input: String::new(),
+            llm_in_flight: false, llm_progress: None,
         })
     }
+
+    pub fn module(&self) -> &Module { self.session.module() }
 
     pub fn load_path(&mut self, path: &std::path::Path) -> Result<(), String> {
         let module = paula::read_module(path).map_err(|e| e.to_string())?;
@@ -73,12 +83,112 @@ impl PlayerState {
         } else {
             self.status = format!("loaded {label}; silent inspection");
         }
-        self.module = module;
+        self.session = Session::new(module);
         self.label = label;
         self.view_pos = 0;
         self.cursor = 0;
         self.follow = true;
         Ok(())
+    }
+
+    pub fn open_ask(&mut self) {
+        if self.llm_in_flight {
+            self.status = "still waiting for the model".to_string();
+        } else if self.session.proposal().is_some() {
+            self.status = "a proposal is waiting: a accepts it, r rejects it; then p asks again".to_string();
+        } else if paula::llm::key::load_key().is_none() {
+            self.status = "no ANTHROPIC_API_KEY (set it in the environment or in a .env file); everything else works".to_string();
+        } else {
+            self.ask_open = true;
+            self.ask_input.clear();
+            self.status = "type a pattern request and press Enter".to_string();
+        }
+    }
+
+    pub fn cancel_ask(&mut self) {
+        self.ask_open = false;
+        self.ask_input.clear();
+        self.status = "ask cancelled".to_string();
+    }
+
+    pub fn submit_prompt_with(&mut self, model: &mut dyn Model, request: &str) {
+        if request.trim().is_empty() {
+            self.status = "the request is empty".to_string();
+            return;
+        }
+        if self.module().samples.iter().all(|sample| sample.data.is_empty()) {
+            self.status = "the module has no samples; load a module with samples".to_string();
+            return;
+        }
+        let tempo = match self.engine.as_ref() {
+            Some(engine) => {
+                let engine = engine.lock().unwrap();
+                Tempo { bpm: engine.bpm(), speed: engine.speed() }
+            }
+            None => Tempo::default(),
+        };
+        let module = self.module().clone();
+        match paula::llm::compose(model, &module, tempo, request, &mut |progress| {
+            self.llm_progress = Some(progress.to_string());
+            self.status = progress.to_string();
+        }) {
+            Ok(proposal) => {
+                let count = proposal.cells.len();
+                self.session.propose(proposal);
+                self.ask_open = false;
+                self.llm_in_flight = false;
+                self.status = format!("proposal ready: {count} cells. a accept · r reject");
+            }
+            Err(error) => {
+                self.ask_open = false;
+                self.llm_in_flight = false;
+                self.status = format!("model failed: {error}");
+            }
+        }
+    }
+
+    pub fn accept_proposal(&mut self) {
+        match self.session.accept() {
+            Ok(pos) => {
+                self.view_pos = pos as u8;
+                self.cursor = 0;
+                self.follow = false;
+                self.status = match self.reload_engine() {
+                    Ok(()) => format!("accepted as song position {pos:02}; u undoes it"),
+                    Err(error) => format!("accepted, but the engine did not load it: {error}"),
+                };
+            }
+            Err(error) => self.status = format!("cannot accept: {error}"),
+        }
+    }
+
+    pub fn reject_proposal(&mut self) {
+        if self.session.proposal().is_some() {
+            self.session.reject();
+            self.status = "proposal rejected; the song is unchanged".to_string();
+        } else {
+            self.status = "no proposal to reject".to_string();
+        }
+    }
+
+    pub fn undo_proposal(&mut self) {
+        if self.session.undo() {
+            self.view_pos = self.view_pos.min(self.module().song_len.saturating_sub(1));
+            self.status = match self.reload_engine() {
+                Ok(()) => "undone".to_string(),
+                Err(error) => format!("undone, but the engine did not load it: {error}"),
+            };
+        } else {
+            self.status = "nothing to undo".to_string();
+        }
+    }
+
+    fn reload_engine(&mut self) -> Result<(), String> {
+        if let Some(engine) = self.engine.as_ref() {
+            engine.lock().unwrap().load(self.module()).map(|_| ()).map_err(|error| error.to_string())
+        } else {
+            Ok(())
+        }
     }
 
     pub fn toggle_play(&mut self, audio: &dyn AudioBackend) {
@@ -114,7 +224,7 @@ impl PlayerState {
         if let Some(engine) = self.engine.as_ref() {
             if self.is_playing() && self.follow {
                 let (pos, row) = engine.lock().unwrap().position();
-                self.view_pos = pos.min(self.module.song_len.saturating_sub(1));
+                self.view_pos = pos.min(self.module().song_len.saturating_sub(1));
                 self.cursor = (row as usize).min(NUM_ROWS - 1);
             }
         }
@@ -127,7 +237,7 @@ impl PlayerState {
 
     pub fn step_position(&mut self, delta: i32) {
         self.follow = false;
-        let last = self.module.song_len.saturating_sub(1) as i32;
+        let last = self.module().song_len.saturating_sub(1) as i32;
         self.view_pos = (self.view_pos as i32 + delta).clamp(0, last) as u8;
     }
 

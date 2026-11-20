@@ -86,6 +86,34 @@ jobs:
         run: cargo test --locked --no-default-features
         working-directory: paula
 
+  paula-mcp:
+    name: paula-mcp (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install C core dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsdl2-dev pkg-config
+      - name: Install C core dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install sdl2 pkg-config
+      - uses: dtolnay/rust-toolchain@1.100.0
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            paula
+            paula-mcp
+      - name: Check paula-mcp
+        run: cargo check --locked --manifest-path paula-mcp/Cargo.toml
+      - name: Test paula-mcp
+        run: cargo test --locked --manifest-path paula-mcp/Cargo.toml
+
   paula-gui:
     name: paula-gui (${{ matrix.os }})
     strategy:

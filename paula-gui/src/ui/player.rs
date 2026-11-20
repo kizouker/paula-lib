@@ -1,4 +1,4 @@
-use super::{cyan, dim, green};
+use super::{cyan, dim, green, pink};
 use crate::audio::AudioBackend;
 use crate::player::ViewMode;
 use crate::state::{Action, AppState};
@@ -16,16 +16,16 @@ pub fn draw(
     };
 
     let playing = app.player.as_ref().is_some_and(|player| player.is_playing());
-    let title = app.player.as_ref().map(|player| player.module.title()).unwrap_or_default();
+    let title = app.player.as_ref().map(|player| player.module().title()).unwrap_or_default();
     let view_pos = app.player.as_ref().map(|player| player.view_pos).unwrap_or(0);
     let cursor = app.player.as_ref().map(|player| player.cursor).unwrap_or(0);
-    let song_len = app.player.as_ref().map(|player| player.module.song_len).unwrap_or(1);
-    let pattern = app.player.as_ref().map(|player| player.module.order[view_pos as usize % song_len as usize]).unwrap_or(0);
+    let song_len = app.player.as_ref().map(|player| player.module().song_len).unwrap_or(1);
+    let pattern = app.player.as_ref().map(|player| player.module().order[view_pos as usize % song_len as usize]).unwrap_or(0);
     let bpm = app.player.as_ref().and_then(|player| player.engine.as_ref()).map(|engine| engine.lock().unwrap().bpm()).unwrap_or(125);
     let speed = app.player.as_ref().and_then(|player| player.engine.as_ref()).map(|engine| engine.lock().unwrap().speed()).unwrap_or(6);
     let follow = app.player.as_ref().is_some_and(|player| player.follow);
     let mode = app.player.as_ref().map(|player| player.view).unwrap_or(crate::player::ViewMode::Tracker);
-    let slots = app.player.as_ref().map(|player| crate::format::sample_slots(&player.module)).unwrap_or_default();
+    let slots = app.player.as_ref().map(|player| crate::format::sample_slots(player.module())).unwrap_or_default();
     let status = app.player.as_ref().map(|player| player.status.clone()).unwrap_or_default();
     ui.horizontal(|ui| {
         let (text, fill) = if playing { ("▶ PLAY", green()) } else { ("■ STOP", dim()) };
@@ -71,6 +71,27 @@ pub fn draw(
             }
         }
         if ui.button("Open .mod...").clicked() { app.status = "open .mod from the file dialog".to_string(); }
+        if app.player.as_ref().is_some_and(|player| player.session.proposal().is_some()) {
+            if ui.add(egui::Button::new(RichText::new("[a Accept]").color(pink())).fill(green())).clicked() {
+                app.dispatch(Action::AcceptProposal, audio);
+            }
+            if ui.add(egui::Button::new(RichText::new("[r Reject]").color(pink())).fill(dim())).clicked() {
+                app.dispatch(Action::RejectProposal, audio);
+            }
+        } else {
+            let ask_disabled = app.player.as_ref().is_some_and(|player| player.llm_in_flight || player.session.proposal().is_some());
+            let mut ask = egui::Button::new(RichText::new("[p Ask]").color(pink()));
+            if ask_disabled { ask = ask.fill(dim()); }
+            if ui.add(ask).clicked() {
+                app.dispatch(Action::OpenAsk, audio);
+            }
+        }
+        let can_undo = app.player.as_ref().is_some_and(|player| player.session.can_undo());
+        let mut undo = egui::Button::new(RichText::new("[u Undo]").color(if can_undo { cyan() } else { dim() })).fill(dim());
+        if can_undo { undo = undo.fill(cyan()); }
+        if ui.add(undo).clicked() {
+            app.dispatch(Action::UndoProposal, audio);
+        }
         if ui.button("← Scores").clicked() {
             *stream = None;
             app.dispatch(Action::Back, audio);
@@ -78,6 +99,25 @@ pub fn draw(
     });
 
     ui.separator();
+    if let Some(player) = app.player.as_ref() {
+        if player.ask_open {
+            ui.horizontal(|ui| {
+                ui.label(RichText::new("ask>").color(pink()).monospace());
+                if let Some(player) = app.player.as_mut() {
+                    let response = ui.text_edit_singleline(&mut player.ask_input);
+                    response.request_focus();
+                    if ui.button("Enter Send").clicked() || ui.input(|input| input.key_pressed(egui::Key::Enter)) {
+                        let request = std::mem::take(&mut player.ask_input);
+                        app.dispatch(Action::SubmitAsk(request), audio);
+                    }
+                    if ui.button("Esc Cancel").clicked() {
+                        app.dispatch(Action::CancelAsk, audio);
+                    }
+                }
+            });
+            ui.separator();
+        }
+    }
     if !slots.is_empty() {
         ui.label(RichText::new(slots.join("  ")).color(green()).monospace());
     }
@@ -95,18 +135,36 @@ pub fn draw(
     }
 
     ui.separator();
-    ui.label(RichText::new("space play/stop · ↑↓ row · PgUp/PgDn 16 · ←→ pos · f follow · s view · q back").color(dim()).monospace());
+    let hints = if app.player.as_ref().is_some_and(|player| player.session.proposal().is_some()) {
+        "a accept · r reject · u undo · space play committed · p asks when resolved"
+    } else {
+        "space play/stop · ↑↓ row · PgUp/PgDn 16 · ←→ pos · f follow · s view · p ask · q back"
+    };
+    ui.label(RichText::new(hints).color(dim()).monospace());
     ui.label(RichText::new(status).color(dim()).monospace());
 }
 
 fn draw_tracker(ui: &mut Ui, player: &crate::player::PlayerState) {
     ScrollArea::vertical().show(ui, |ui| {
-        let pattern = player.module.order[player.view_pos as usize % player.module.song_len as usize] as usize;
+        let proposal = player.session.proposal();
+        let pattern = if proposal.is_none() {
+            player.module().order[player.view_pos as usize % player.module().song_len as usize] as usize
+        } else { 0 };
+        let shown = proposal.map(|proposal| &proposal.pattern);
+        let shown = shown.or_else(|| player.module().patterns.get(pattern));
+        if let Some(proposal) = proposal {
+            ui.label(RichText::new(format!(
+                "PROPOSAL \"{}\" · {} cells · a accept · r reject",
+                proposal.prompt,
+                proposal.cells.len()
+            )).color(pink()).strong().monospace());
+        }
         for row in 0..64 {
             let beat = row % 4 == 0;
             let mut job = egui::text::LayoutJob::default();
             job.append(&format!("{row:02} │ "), 0.0, egui::TextFormat { font_id: egui::FontId::monospace(13.0), color: if beat { cyan() } else { dim() }, ..Default::default() });
-            for (channel, cell) in player.module.patterns.get(pattern).map_or(&[][..], |p| p[row].as_slice()).iter().enumerate() {
+            let cells = shown.map_or(&[][..], |p| p[row].as_slice());
+            for (channel, cell) in cells.iter().enumerate() {
                 if channel > 0 {
                     job.append(" │ ", 0.0, egui::TextFormat::simple(
                         egui::FontId::monospace(13.0),
