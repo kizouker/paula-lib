@@ -96,8 +96,8 @@ impl PlayerState {
             self.status = "still waiting for the model".to_string();
         } else if self.session.proposal().is_some() {
             self.status = "a proposal is waiting: a accepts it, r rejects it; then p asks again".to_string();
-        } else if paula::llm::key::load_key().is_none() {
-            self.status = "no ANTHROPIC_API_KEY (set it in the environment or in a .env file); everything else works".to_string();
+        } else if paula::llm::key::load_config().is_err() {
+            self.status = format!("{}; everything else works", paula::llm::ModelError::NoKey);
         } else {
             self.ask_open = true;
             self.ask_input.clear();
