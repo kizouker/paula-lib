@@ -6,7 +6,7 @@
 //! Menu keys: ↑/↓ choose · l lint · PgUp/PgDn scroll the lint panel · enter compile and play · w save .mod + .wav next to the score · k choose the base kit · q quit
 //! Keys: space play/stop · ↑/↓ row · PgUp/PgDn 16 rows · ←/→ song position · f follow · s tracker/spectrum/both · d diesel · q quit
 //!   p ask the model for a pattern (type the request, Enter sends, Esc cancels) · a accept the proposal · r reject it · u undo the last accept
-//! The model call runs on its own thread, so playback and the screen never wait for it. Needs ANTHROPIC_API_KEY (environment or .env).
+//! The model call runs on its own thread, so playback and the screen never wait for it. Needs MODEL_API_KEY (Meta Muse) or ANTHROPIC_API_KEY (environment or .env).
 
 use paula::diesel::{self, Choreography, Dancer, Image};
 use paula::diesel_view::DieselWidget;
@@ -389,7 +389,7 @@ fn open_prompt(app: &mut App) {
     } else if !cfg!(feature = "llm") {
         app.status = "this build has no `llm` feature".into();
     } else if !key_present() {
-        app.status = "no ANTHROPIC_API_KEY (set it in the environment or in a .env file); everything else works".into();
+        app.status = format!("{}; everything else works", paula::llm::ModelError::NoKey);
     } else {
         app.input = Some(String::new());
     }
@@ -397,7 +397,7 @@ fn open_prompt(app: &mut App) {
 
 #[cfg(feature = "llm")]
 fn key_present() -> bool {
-    paula::llm::key::load_key().is_some()
+    paula::llm::key::load_config().is_ok()
 }
 
 #[cfg(not(feature = "llm"))]
