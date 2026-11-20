@@ -8,6 +8,7 @@ use super::key::{ApiKey, Auth, Config, ConfigError, Provider};
 use super::prompt::Message;
 use super::{Model, ModelError};
 use serde_json::{json, Value};
+use std::net::{SocketAddr, ToSocketAddrs};
 use std::time::Duration;
 
 const VERSION: &str = "2023-06-01";
@@ -37,7 +38,11 @@ impl Client {
     }
 
     pub fn with_config(config: Config) -> Self {
-        let agent = ureq::AgentBuilder::new().timeout_connect(Duration::from_secs(15)).timeout(Duration::from_secs(180)).build();
+        let agent = ureq::AgentBuilder::new()
+            .resolver(|host: &str| ipv4_first(host.to_socket_addrs()?.collect()))
+            .timeout_connect(Duration::from_secs(15))
+            .timeout(Duration::from_secs(180))
+            .build();
         Client { config, agent }
     }
 
@@ -61,6 +66,14 @@ impl Client {
     fn scrub(&self, s: String) -> String {
         s.replace(self.config.key.expose(), "***")
     }
+}
+
+/// IPv4 addresses before IPv6, order kept otherwise. ureq tries the addresses in turn but a
+/// network with broken IPv6 can fail the first try with "No route to host"; curl and browsers
+/// fall back by racing both families, which ureq does not.
+pub fn ipv4_first(mut addrs: Vec<SocketAddr>) -> std::io::Result<Vec<SocketAddr>> {
+    addrs.sort_by_key(|a| !a.is_ipv4());
+    Ok(addrs)
 }
 
 /// Headers for one request; `key` goes in the auth header the provider wants.
