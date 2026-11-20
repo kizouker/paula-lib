@@ -86,6 +86,37 @@ jobs:
         run: cargo test --locked --no-default-features
         working-directory: paula
 
+  paula-gui:
+    name: paula-gui (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install GUI and audio dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libsdl2-dev libasound2-dev pkg-config \
+            libxkbcommon-dev libx11-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev \
+            libwayland-dev libgl1-mesa-dev libegl1-mesa-dev
+      - name: Install SDL2 (macOS)
+        if: runner.os == 'macOS'
+        run: brew install sdl2 pkg-config
+      - uses: dtolnay/rust-toolchain@1.100.0
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            paula
+            paula-gui
+      - name: Check paula-gui
+        run: cargo check --locked --manifest-path paula-gui/Cargo.toml
+      - name: Test paula-gui
+        run: cargo test --locked --manifest-path paula-gui/Cargo.toml
+
   wasm:
     name: Wasm build (ubuntu-latest)
     runs-on: ubuntu-latest
