@@ -20,16 +20,16 @@ fn load_errors_preserve_the_previous_module() {
     let mut player = PlayerState::new(original.clone(), "original", 44100, false).unwrap();
 
     player.load_path(&valid).unwrap();
-    assert_eq!(player.module, original);
+    assert_eq!(player.module(), &original);
     assert!(player.status.contains("loaded"));
 
-    let before = player.module.clone();
+    let before = player.module().clone();
     assert!(player.load_path(&dir.join("missing.mod")).is_err());
-    assert_eq!(player.module, before);
+    assert_eq!(player.module(), &before);
     let corrupt = dir.join("corrupt.mod");
     std::fs::write(&corrupt, b"not a mod").unwrap();
     assert!(player.load_path(&corrupt).is_err());
-    assert_eq!(player.module, before);
+    assert_eq!(player.module(), &before);
 }
 
 #[test]

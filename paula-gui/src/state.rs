@@ -3,6 +3,14 @@ use crate::player::PlayerState;
 use crate::player::ViewMode;
 use paula::menu::Menu;
 use paula::menu::{Compiled, Saved};
+use paula::session::Proposal;
+use std::sync::{mpsc, mpsc::{Receiver, TryRecvError}};
+
+#[derive(Debug)]
+pub enum LlmEvent {
+    Progress(String),
+    Done(Result<Proposal, String>),
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Screen {
@@ -28,6 +36,12 @@ pub enum Action {
     PageRow(i32),
     Back,
     LintScroll(i32),
+    OpenAsk,
+    CancelAsk,
+    SubmitAsk(String),
+    AcceptProposal,
+    RejectProposal,
+    UndoProposal,
 }
 
 pub struct AppState {
@@ -41,9 +55,57 @@ pub struct AppState {
     pub status: String,
     pub rate: u32,
     pub audio_available: bool,
+    pub llm_rx: Option<Receiver<LlmEvent>>,
 }
 
 impl AppState {
+    pub fn poll_llm(&mut self) {
+        let Some(rx) = self.llm_rx.as_ref() else { return };
+        loop {
+            match rx.try_recv() {
+                Ok(LlmEvent::Progress(progress)) => {
+                    self.status = progress.clone();
+                    if let Some(player) = self.player.as_mut() {
+                        player.status = progress.clone();
+                        player.llm_progress = Some(progress);
+                    }
+                }
+                Ok(LlmEvent::Done(Ok(proposal))) => {
+                    let count = proposal.cells.len();
+                    if let Some(player) = self.player.as_mut() {
+                        player.session.propose(proposal);
+                        player.ask_open = false;
+                        player.llm_in_flight = false;
+                        player.status = format!("proposal ready: {count} cells. a accept · r reject");
+                        self.status = player.status.clone();
+                    }
+                    self.llm_rx = None;
+                    return;
+                }
+                Ok(LlmEvent::Done(Err(error))) => {
+                    if let Some(player) = self.player.as_mut() {
+                        player.ask_open = false;
+                        player.llm_in_flight = false;
+                        player.status = format!("model failed: {error}");
+                        self.status = player.status.clone();
+                    }
+                    self.llm_rx = None;
+                    return;
+                }
+                Err(TryRecvError::Empty) => return,
+                Err(TryRecvError::Disconnected) => {
+                    if let Some(player) = self.player.as_mut() {
+                        player.llm_in_flight = false;
+                        player.status = "model thread ended without an answer".to_string();
+                        self.status = player.status.clone();
+                    }
+                    self.llm_rx = None;
+                    return;
+                }
+            }
+        }
+    }
+
     pub fn menu(dirs: &[std::path::PathBuf], base: Option<std::path::PathBuf>, strict: bool, rate: u32) -> Self {
         Self::menu_with_audio(dirs, base, strict, rate, true)
     }
@@ -62,6 +124,7 @@ impl AppState {
             status,
             rate,
             audio_available,
+            llm_rx: None,
         }
     }
 
@@ -80,6 +143,7 @@ impl AppState {
             status,
             rate,
             audio_available,
+            llm_rx: None,
         }
     }
 
@@ -225,6 +289,72 @@ impl AppState {
                     self.lint_scroll = (self.lint_scroll as i32 + delta * self.lint_page as i32).clamp(0, max as i32) as usize;
                 }
             }
+            Action::OpenAsk => if let Some(player) = self.player.as_mut() {
+                player.open_ask();
+                self.status = player.status.clone();
+            },
+            Action::CancelAsk => if let Some(player) = self.player.as_mut() {
+                player.cancel_ask();
+                self.status = player.status.clone();
+            },
+            Action::SubmitAsk(request) => if let Some(player) = self.player.as_mut() {
+                player.ask_input = request;
+                if player.llm_in_flight {
+                    player.status = "still waiting for the model".to_string();
+                } else if player.ask_input.trim().is_empty() {
+                    player.status = "the request is empty".to_string();
+                    player.ask_open = false;
+                } else if player.module().samples.iter().all(|sample| sample.data.is_empty()) {
+                    player.status = "the module has no samples; load a module with samples".to_string();
+                    player.ask_open = false;
+                } else if paula::llm::key::load_key().is_none() {
+                    player.status = "no ANTHROPIC_API_KEY (set it in the environment or in a .env file); everything else works".to_string();
+                    player.ask_open = false;
+                } else {
+                    let module = player.module().clone();
+                    let tempo = match player.engine.as_ref() {
+                        Some(engine) => {
+                            let engine = engine.lock().unwrap();
+                            paula::llm::Tempo { bpm: engine.bpm(), speed: engine.speed() }
+                        }
+                        None => paula::llm::Tempo::default(),
+                    };
+                    let request = std::mem::take(&mut player.ask_input);
+                    let (tx, rx) = mpsc::channel();
+                    player.ask_open = false;
+                    player.llm_in_flight = true;
+                    player.llm_progress = None;
+                    player.status = "asking the model...".to_string();
+                    self.llm_rx = Some(rx);
+                    std::thread::spawn(move || {
+                        let result = paula::llm::client::Anthropic::from_env()
+                            .map_err(paula::llm::ComposeError::Model)
+                            .and_then(|mut model| paula::llm::compose(
+                                &mut model,
+                                &module,
+                                tempo,
+                                &request,
+                                &mut |progress| {
+                                    let _ = tx.send(LlmEvent::Progress(progress.to_string()));
+                                },
+                            ));
+                        let _ = tx.send(LlmEvent::Done(result.map_err(|error| error.to_string())));
+                    });
+                }
+                self.status = player.status.clone();
+            },
+            Action::AcceptProposal => if let Some(player) = self.player.as_mut() {
+                player.accept_proposal();
+                self.status = player.status.clone();
+            },
+            Action::RejectProposal => if let Some(player) = self.player.as_mut() {
+                player.reject_proposal();
+                self.status = player.status.clone();
+            },
+            Action::UndoProposal => if let Some(player) = self.player.as_mut() {
+                player.undo_proposal();
+                self.status = player.status.clone();
+            },
         }
     }
 

@@ -51,12 +51,22 @@ impl GuiApp {
 impl eframe::App for GuiApp {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
         configure_visuals(ctx);
+        self.app.poll_llm();
 
         ctx.input(|input| {
             for event in &input.events {
                 let egui::Event::Key { key, pressed: true, .. } = event else { continue };
+                if self.app.screen == Screen::Player
+                    && self.app.player.as_ref().is_some_and(|player| player.ask_open)
+                {
+                    if *key == Key::Escape {
+                        self.app.dispatch(crate::state::Action::CancelAsk, &self.audio);
+                    }
+                    continue;
+                }
                 match key {
-                    Key::Space if self.app.screen == Screen::Player => {
+                    Key::Space if self.app.screen == Screen::Player
+                        && self.app.player.as_ref().is_none_or(|player| !player.ask_open) => {
                         let playing = self.app.player.as_ref().is_some_and(|player| player.is_playing());
                         if playing {
                             if let Some(player) = self.app.player.as_mut() { player.stop(); }
@@ -68,9 +78,23 @@ impl eframe::App for GuiApp {
                         }
                     }
                     Key::Escape | Key::Q => self.back(),
-                    Key::F if self.app.screen == Screen::Player =>
+                    Key::P if self.app.screen == Screen::Player
+                        && self.app.player.as_ref().is_none_or(|player| !player.ask_open) =>
+                        self.app.dispatch(crate::state::Action::OpenAsk, &self.audio),
+                    Key::A if self.app.screen == Screen::Player
+                        && self.app.player.as_ref().is_none_or(|player| !player.ask_open) =>
+                        self.app.dispatch(crate::state::Action::AcceptProposal, &self.audio),
+                    Key::R if self.app.screen == Screen::Player
+                        && self.app.player.as_ref().is_none_or(|player| !player.ask_open) =>
+                        self.app.dispatch(crate::state::Action::RejectProposal, &self.audio),
+                    Key::U if self.app.screen == Screen::Player
+                        && self.app.player.as_ref().is_none_or(|player| !player.ask_open) =>
+                        self.app.dispatch(crate::state::Action::UndoProposal, &self.audio),
+                    Key::F if self.app.screen == Screen::Player
+                        && self.app.player.as_ref().is_none_or(|player| !player.ask_open) =>
                         self.app.dispatch(crate::state::Action::ToggleFollow, &self.audio),
-                    Key::S if self.app.screen == Screen::Player =>
+                    Key::S if self.app.screen == Screen::Player
+                        && self.app.player.as_ref().is_none_or(|player| !player.ask_open) =>
                         self.app.dispatch(crate::state::Action::CycleView, &self.audio),
                     Key::ArrowUp if self.app.screen == Screen::Menu =>
                         self.app.dispatch(crate::state::Action::Select(-1), &self.audio),
@@ -80,17 +104,23 @@ impl eframe::App for GuiApp {
                         self.app.dispatch(crate::state::Action::LintScroll(-1), &self.audio),
                     Key::PageDown if self.app.screen == Screen::Menu =>
                         self.app.dispatch(crate::state::Action::LintScroll(1), &self.audio),
-                    Key::ArrowUp if self.app.screen == Screen::Player =>
+                    Key::ArrowUp if self.app.screen == Screen::Player
+                        && self.app.player.as_ref().is_none_or(|player| !player.ask_open) =>
                         self.app.dispatch(crate::state::Action::Row(-1), &self.audio),
-                    Key::ArrowDown if self.app.screen == Screen::Player =>
+                    Key::ArrowDown if self.app.screen == Screen::Player
+                        && self.app.player.as_ref().is_none_or(|player| !player.ask_open) =>
                         self.app.dispatch(crate::state::Action::Row(1), &self.audio),
-                    Key::PageUp if self.app.screen == Screen::Player =>
+                    Key::PageUp if self.app.screen == Screen::Player
+                        && self.app.player.as_ref().is_none_or(|player| !player.ask_open) =>
                         self.app.dispatch(crate::state::Action::PageRow(-1), &self.audio),
-                    Key::PageDown if self.app.screen == Screen::Player =>
+                    Key::PageDown if self.app.screen == Screen::Player
+                        && self.app.player.as_ref().is_none_or(|player| !player.ask_open) =>
                         self.app.dispatch(crate::state::Action::PageRow(1), &self.audio),
-                    Key::ArrowLeft if self.app.screen == Screen::Player =>
+                    Key::ArrowLeft if self.app.screen == Screen::Player
+                        && self.app.player.as_ref().is_none_or(|player| !player.ask_open) =>
                         self.app.dispatch(crate::state::Action::Position(-1), &self.audio),
-                    Key::ArrowRight if self.app.screen == Screen::Player =>
+                    Key::ArrowRight if self.app.screen == Screen::Player
+                        && self.app.player.as_ref().is_none_or(|player| !player.ask_open) =>
                         self.app.dispatch(crate::state::Action::Position(1), &self.audio),
                     Key::Enter if self.app.screen == Screen::Menu => {
                         self.stream = None;
@@ -128,7 +158,7 @@ impl eframe::App for GuiApp {
             self.open_mod_dialog();
         }
 
-        if self.app.player.as_ref().is_some_and(|p| p.is_playing()) {
+        if self.app.player.as_ref().is_some_and(|p| p.is_playing() || p.llm_in_flight) {
             ctx.request_repaint_after(std::time::Duration::from_millis(16));
         }
     }
