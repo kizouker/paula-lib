@@ -208,11 +208,10 @@ paula-tui --score examples/rio-zouk.paula.toml --base kit.mod
 **Your own sounds.** The generated kit is thin on purpose (a short sine kick, one-cycle bass and keys). Put your own WAV files into slots with `--from <slot>=<file.wav>[@<note>]`; free slots keep the demo sound. `@note` is the real pitch of a pitched sound (`G3` is about 196 Hz) and retunes it so it plays in tune with the score; leave it out for drums. Any PCM WAV works (8, 16 or 24 bit, mono or stereo, any rate).
 
 ```sh
-# the starter kit in this repo: kick, Epiphone SG bass (Ab1) and piano (G3), see assets/starter-kit/PROVENANCE.md
+# the starter kit in this repo: kick and Epiphone SG bass (Ab1), see assets/starter-kit/PROVENANCE.md
 cargo run --release --example make-kit -- own-kit.mod \
   --from 1=../assets/starter-kit/01_kick_larm.wav \
-  --from 4=../assets/starter-kit/04_bass.wav@Ab1 \
-  --from 5=../assets/starter-kit/05_piano_g3.wav@G3
+  --from 4=../assets/starter-kit/04_bass.wav@Ab1
 paula-play --score examples/rio-zouk.paula.toml --base own-kit.mod --wav rio-zouk.wav
 ```
 

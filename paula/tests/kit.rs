@@ -78,14 +78,12 @@ fn rickards_kit_compiles_rio_zouk_and_is_louder_than_the_chip_bass() {
     let read = |f: &str| paula::wav::read_mono8(&std::fs::read(starter(f)).unwrap()).unwrap();
     let (kr, kick) = read("01_kick_larm.wav");
     let (br, bass) = read("04_bass.wav");
-    let (pr, piano) = read("05_piano_g3.wav");
     let sounds = [
         KitSound { slot: 1, name: "kick".into(), data: retune(&kick, kr, None), volume: 64 },
         KitSound { slot: 4, name: "bass".into(), data: retune(&bass, br, Some(-16)), volume: 64 },
-        KitSound { slot: 5, name: "piano".into(), data: retune(&piano, pr, Some(7)), volume: 64 },
     ];
     let kit = with_sounds(demo_kit(), &sounds).unwrap();
-    assert!(kit.samples[4].data.len() > 1000, "the keys are a real piano note, not a 32-byte chip cycle");
+    assert!(kit.samples[3].data.len() > 1000, "the bass is Rickard's SG, not a 64-byte chip cycle");
     let src = std::fs::read_to_string(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples/rio-zouk.paula.toml")).unwrap();
     let (module, _) = paula::score::compile_source(&src, &kit, false).unwrap();
     assert!(module.song_len > 1);

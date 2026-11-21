@@ -42,9 +42,10 @@ Converted earlier with SoX (`convert.sh`, no dither, gain -0.3 dB) to mono 8-bit
 | Slot | File | Instrument | Original file | Note |
 |---|---|---|---|---|
 | 1 | `01_kick_larm.wav` | Kick | `MUVA61_Uppgift3_Larm_Kick.wav` (Rickard's MUVA61 course task) | drum, no pitch |
-| 5 | `05_piano_g3.wav` | Piano, one note G3 (about 197 Hz) | cut at 47.12 s from Rickard's own piano recording, two Shure B54 microphones, L and R summed to mono (`5 L Piano - _shure_b54_1.wav`, `6 R Piano - __shure_b54_1.wav`) | `make-kit` retunes it with `@G3` |
+
+The piano cut `05_piano_g3.wav` was taken out again the same day: a spectrum shows several notes ringing together (D3, D#3, G3, G#3, G4, A#4, D5), so it is a chord fragment, not one note, and plays out of tune. A clean single piano note is still to be cut.
 
 `04_bass.wav` (Epiphone SG, Ab1, about 52 Hz) is retuned with `@Ab1`.
 
 Build the kit with these sounds (from `paula/`):
-`cargo run --release --example make-kit -- kit.mod --from 1=../assets/starter-kit/01_kick_larm.wav --from 4=../assets/starter-kit/04_bass.wav@Ab1 --from 5=../assets/starter-kit/05_piano_g3.wav@G3`
+`cargo run --release --example make-kit -- kit.mod --from 1=../assets/starter-kit/01_kick_larm.wav --from 4=../assets/starter-kit/04_bass.wav@Ab1`
