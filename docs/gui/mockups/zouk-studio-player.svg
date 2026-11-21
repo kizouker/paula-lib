@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <!-- Background Canvas -->
+  <rect x="0" y="0" width="1440" height="900" fill="#0a0e14"/>
+
+  <!-- TOP HEADER BAR (y=16..74) -->
+  <rect x="20" y="16" width="1400" height="58" rx="6" fill="#101828" stroke="#606a80" stroke-width="1"/>
+  <rect x="34" y="29" width="112" height="32" rx="4" fill="#39ff88"/>
+  <text x="90" y="50" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" font-weight="bold" fill="#000000">&#9654; PLAY</text>
+  <text x="156" y="49" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">[Space]</text>
+
+  <text x="224" y="50" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="18" font-weight="bold" fill="#00e5ff">RIO ZOUK &#183; STUDIO</text>
+  <text x="412" y="50" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">A minor (aeolian) &#183; BPM 90 &#183; pos 02/36 &#183; pat 01</text>
+
+  <rect x="1030" y="30" width="118" height="30" rx="4" fill="#00e5ff"/>
+  <text x="1089" y="49" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="bold" fill="#000000">Zouk Studio</text>
+
+  <rect x="1158" y="30" width="120" height="30" rx="4" fill="#0a0e14" stroke="#606a80" stroke-width="1"/>
+  <text x="1218" y="49" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#e2e8f0">Open .mod...</text>
+
+  <rect x="1288" y="30" width="118" height="30" rx="4" fill="#0a0e14" stroke="#606a80" stroke-width="1"/>
+  <text x="1347" y="49" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#00e5ff">&#8592; Scores [q]</text>
+
+  <!-- LEFT PANEL: CLICKABLE CIRCLE OF FIFTHS (x=20..520, y=88..690) -->
+  <rect x="20" y="88" width="500" height="602" rx="8" fill="#101828" stroke="#00e5ff" stroke-width="1.2"/>
+  <text x="40" y="118" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" font-weight="bold" fill="#00e5ff">CIRCLE OF FIFTHS</text>
+  <text x="500" y="118" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">click key / chord [c]</text>
+
+  <!-- Outer & Inner Circles -->
+  <circle cx="270" cy="345" r="210" fill="#0a0e14" stroke="#606a80" stroke-width="1.5"/>
+  <circle cx="270" cy="345" r="145" fill="none" stroke="#606a80" stroke-width="1.2"/>
+  <circle cx="270" cy="345" r="78" fill="#101828" stroke="#00e5ff" stroke-width="1.5"/>
+
+  <!-- Highlighted Song Chords in Inner Minor Ring: Dm (iv), Am (i - active), Em (v) -->
+  <!-- Dm wedge (-135 to -105 deg) -->
+  <path d="M 167 242 A 145 145 0 0 1 232 205 L 250 270 A 78 78 0 0 0 215 290 Z" fill="#142b24" stroke="#39ff88" stroke-width="1.5"/>
+  <!-- Am wedge (-105 to -75 deg) - Active Key -->
+  <path d="M 232 205 A 145 145 0 0 1 308 205 L 290 270 A 78 78 0 0 0 250 270 Z" fill="#0d3545" stroke="#00e5ff" stroke-width="2"/>
+  <!-- Em wedge (-75 to -45 deg) -->
+  <path d="M 308 205 A 145 145 0 0 1 373 242 L 325 290 A 78 78 0 0 0 290 270 Z" fill="#142b24" stroke="#39ff88" stroke-width="1.5"/>
+
+  <!-- 12 Radial Sector Lines (r=78 to r=210) -->
+  <line x1="250" y1="270" x2="216" y2="142" stroke="#606a80" stroke-width="1"/>
+  <line x1="290" y1="270" x2="324" y2="142" stroke="#606a80" stroke-width="1"/>
+  <line x1="325" y1="290" x2="418" y2="197" stroke="#606a80" stroke-width="1"/>
+  <line x1="345" y1="325" x2="473" y2="291" stroke="#606a80" stroke-width="1"/>
+  <line x1="345" y1="365" x2="473" y2="399" stroke="#606a80" stroke-width="1"/>
+  <line x1="325" y1="400" x2="418" y2="493" stroke="#606a80" stroke-width="1"/>
+  <line x1="290" y1="420" x2="324" y2="548" stroke="#606a80" stroke-width="1"/>
+  <line x1="250" y1="420" x2="216" y2="548" stroke="#606a80" stroke-width="1"/>
+  <line x1="215" y1="400" x2="122" y2="493" stroke="#606a80" stroke-width="1"/>
+  <line x1="195" y1="365" x2="67" y2="399" stroke="#606a80" stroke-width="1"/>
+  <line x1="195" y1="325" x2="67" y2="291" stroke="#606a80" stroke-width="1"/>
+  <line x1="215" y1="290" x2="122" y2="197" stroke="#606a80" stroke-width="1"/>
+
+  <!-- Outer Ring: 12 Major Keys -->
+  <text x="270" y="172" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="16" font-weight="bold" fill="#e2e8f0">C</text>
+  <text x="359" y="196" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#e2e8f0">G</text>
+  <text x="424" y="261" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#606a80">D</text>
+  <text x="448" y="350" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#606a80">A</text>
+  <text x="424" y="439" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#606a80">E</text>
+  <text x="359" y="504" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#606a80">B</text>
+  <text x="270" y="528" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#606a80">F#</text>
+  <text x="181" y="504" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#606a80">Db</text>
+  <text x="116" y="439" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#606a80">Ab</text>
+  <text x="92" y="350" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#606a80">Eb</text>
+  <text x="116" y="261" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#606a80">Bb</text>
+  <text x="181" y="196" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#e2e8f0">F</text>
+
+  <!-- Inner Ring: 12 Relative Minor Keys -->
+  <text x="270" y="236" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="15" font-weight="bold" fill="#00e5ff">Am</text>
+  <text x="326" y="253" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" font-weight="bold" fill="#39ff88">Em</text>
+  <text x="367" y="294" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">Bm</text>
+  <text x="382" y="350" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">F#m</text>
+  <text x="367" y="406" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">C#m</text>
+  <text x="326" y="447" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">G#m</text>
+  <text x="270" y="462" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">D#m</text>
+  <text x="214" y="447" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">Bbm</text>
+  <text x="173" y="406" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">Fm</text>
+  <text x="158" y="350" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">Cm</text>
+  <text x="173" y="294" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">Gm</text>
+  <text x="214" y="253" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" font-weight="bold" fill="#39ff88">Dm</text>
+
+  <!-- Center Hub -->
+  <text x="270" y="335" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="18" font-weight="bold" fill="#00e5ff">A minor</text>
+  <text x="270" y="356" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">aeolian</text>
+  <text x="270" y="376" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#39ff88">i &#183; iv &#183; v</text>
+
+  <!-- Song Chords Legend below Circle -->
+  <rect x="40" y="576" width="460" height="96" rx="6" fill="#0a0e14" stroke="#606a80" stroke-width="1"/>
+  <text x="56" y="598" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">SONG CHORDS (ACTIVE IN RIO ZOUK)</text>
+
+  <rect x="56" y="612" width="124" height="44" rx="4" fill="#0d3545" stroke="#00e5ff" stroke-width="1.5"/>
+  <text x="118" y="633" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" font-weight="bold" fill="#00e5ff">Am (i)</text>
+  <text x="118" y="649" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="10" fill="#e2e8f0">tonic</text>
+
+  <rect x="194" y="612" width="124" height="44" rx="4" fill="#142b24" stroke="#39ff88" stroke-width="1.5"/>
+  <text x="256" y="633" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" font-weight="bold" fill="#39ff88">Dm (iv)</text>
+  <text x="256" y="649" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="10" fill="#e2e8f0">subdominant</text>
+
+  <rect x="332" y="612" width="124" height="44" rx="4" fill="#142b24" stroke="#39ff88" stroke-width="1.5"/>
+  <text x="394" y="633" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" font-weight="bold" fill="#39ff88">Em (v)</text>
+  <text x="394" y="649" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="10" fill="#e2e8f0">dominant</text>
+
+  <!-- RIGHT TOP: GROOVE GRID ("bom - chick chick - bom") (x=536..1420, y=88..348) -->
+  <rect x="536" y="88" width="884" height="260" rx="8" fill="#101828" stroke="#606a80" stroke-width="1.2"/>
+  <text x="556" y="116" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" font-weight="bold" fill="#00e5ff">ZOUK GROOVE &#183; "bom - chick chick - bom"</text>
+  <text x="1400" y="116" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#ff3dc8">laid-back chick delay: ED2 (+18ms)</text>
+
+  <!-- 16-step Grid Header (x=676..1396, step=45px) -->
+  <text x="698" y="144" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="bold" fill="#00e5ff">1</text>
+  <text x="743" y="144" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">02</text>
+  <text x="788" y="144" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">03</text>
+  <text x="833" y="144" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">04</text>
+  <text x="878" y="144" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="bold" fill="#00e5ff">2</text>
+  <text x="923" y="144" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">06</text>
+  <text x="968" y="144" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">07</text>
+  <text x="1013" y="144" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">08</text>
+  <text x="1058" y="144" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="bold" fill="#00e5ff">3</text>
+  <text x="1103" y="144" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">10</text>
+  <text x="1148" y="144" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">11</text>
+  <text x="1193" y="144" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">12</text>
+  <text x="1238" y="144" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="bold" fill="#00e5ff">4</text>
+  <text x="1283" y="144" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">14</text>
+  <text x="1328" y="144" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">15</text>
+  <text x="1373" y="144" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">16</text>
+
+  <!-- Vertical grid lines (16 steps) -->
+  <line x1="676" y1="154" x2="676" y2="334" stroke="#00e5ff" stroke-width="1"/>
+  <line x1="721" y1="154" x2="721" y2="334" stroke="#1c2638" stroke-width="1"/>
+  <line x1="766" y1="154" x2="766" y2="334" stroke="#1c2638" stroke-width="1"/>
+  <line x1="811" y1="154" x2="811" y2="334" stroke="#1c2638" stroke-width="1"/>
+  <line x1="856" y1="154" x2="856" y2="334" stroke="#00e5ff" stroke-width="1"/>
+  <line x1="901" y1="154" x2="901" y2="334" stroke="#1c2638" stroke-width="1"/>
+  <line x1="946" y1="154" x2="946" y2="334" stroke="#1c2638" stroke-width="1"/>
+  <line x1="991" y1="154" x2="991" y2="334" stroke="#1c2638" stroke-width="1"/>
+  <line x1="1036" y1="154" x2="1036" y2="334" stroke="#00e5ff" stroke-width="1"/>
+  <line x1="1081" y1="154" x2="1081" y2="334" stroke="#1c2638" stroke-width="1"/>
+  <line x1="1126" y1="154" x2="1126" y2="334" stroke="#1c2638" stroke-width="1"/>
+  <line x1="1171" y1="154" x2="1171" y2="334" stroke="#1c2638" stroke-width="1"/>
+  <line x1="1216" y1="154" x2="1216" y2="334" stroke="#00e5ff" stroke-width="1"/>
+  <line x1="1261" y1="154" x2="1261" y2="334" stroke="#1c2638" stroke-width="1"/>
+  <line x1="1306" y1="154" x2="1306" y2="334" stroke="#1c2638" stroke-width="1"/>
+  <line x1="1351" y1="154" x2="1351" y2="334" stroke="#1c2638" stroke-width="1"/>
+  <line x1="1396" y1="154" x2="1396" y2="334" stroke="#1c2638" stroke-width="1"/>
+
+  <!-- Playhead Marker at Beat 2 (step 4, x=856) -->
+  <line x1="856" y1="148" x2="856" y2="462" stroke="#ff3dc8" stroke-width="2"/>
+
+  <!-- Lane 1: KICK (bom) - steps 0, 6, 8, 14 (on grid) -->
+  <text x="556" y="186" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" font-weight="bold" fill="#00e5ff">KICK</text>
+  <text x="556" y="202" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">01 &#183; bom</text>
+  <rect x="678" y="164" width="38" height="42" rx="4" fill="#00e5ff"/>
+  <text x="697" y="190" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="bold" fill="#000000">bom</text>
+  <rect x="948" y="164" width="38" height="42" rx="4" fill="#00e5ff"/>
+  <text x="967" y="190" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="bold" fill="#000000">bom</text>
+  <rect x="1038" y="164" width="38" height="42" rx="4" fill="#00e5ff"/>
+  <text x="1057" y="190" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="bold" fill="#000000">bom</text>
+  <rect x="1308" y="164" width="38" height="42" rx="4" fill="#00e5ff"/>
+  <text x="1327" y="190" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="bold" fill="#000000">bom</text>
+
+  <!-- Lane 2: CHICK - steps 4, 7(ghost), 12, 15(ghost) SHIFTED RIGHT (+11px) to show laid-back delay -->
+  <text x="556" y="246" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" font-weight="bold" fill="#ff3dc8">CHICK</text>
+  <text x="556" y="262" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#ff3dc8">02 &#183; late</text>
+
+  <!-- Step 4 (x=856 -> shifted to 867) -->
+  <line x1="856" y1="244" x2="867" y2="244" stroke="#ff3dc8" stroke-width="1.5"/>
+  <rect x="867" y="224" width="38" height="42" rx="4" fill="#ff3dc8"/>
+  <text x="886" y="249" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" font-weight="bold" fill="#000000">chk</text>
+
+  <!-- Step 7 ghost (x=991 -> shifted to 1002) -->
+  <line x1="991" y1="244" x2="1002" y2="244" stroke="#ff3dc8" stroke-width="1.5"/>
+  <rect x="1002" y="230" width="34" height="30" rx="4" fill="#201030" stroke="#ff3dc8" stroke-width="1.2"/>
+  <text x="1019" y="249" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="10" fill="#ff3dc8">chk</text>
+
+  <!-- Step 12 (x=1216 -> shifted to 1227) -->
+  <line x1="1216" y1="244" x2="1227" y2="244" stroke="#ff3dc8" stroke-width="1.5"/>
+  <rect x="1227" y="224" width="38" height="42" rx="4" fill="#ff3dc8"/>
+  <text x="1246" y="249" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" font-weight="bold" fill="#000000">chk</text>
+
+  <!-- Step 15 ghost (x=1351 -> shifted to 1362) -->
+  <line x1="1351" y1="244" x2="1362" y2="244" stroke="#ff3dc8" stroke-width="1.5"/>
+  <rect x="1362" y="230" width="34" height="30" rx="4" fill="#201030" stroke="#ff3dc8" stroke-width="1.2"/>
+  <text x="1379" y="249" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="10" fill="#ff3dc8">chk</text>
+
+  <!-- Lane 3: BASS - steps 0, 6, 8, 14 (with proposal weight ring) -->
+  <text x="556" y="306" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" font-weight="bold" fill="#39ff88">BASS</text>
+  <text x="556" y="322" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">04 &#183; +wt</text>
+  <rect x="678" y="284" width="38" height="42" rx="4" fill="#39ff88" stroke="#ff3dc8" stroke-width="1.5"/>
+  <text x="697" y="310" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" font-weight="bold" fill="#000000">A-1</text>
+  <rect x="948" y="284" width="38" height="42" rx="4" fill="#39ff88" stroke="#ff3dc8" stroke-width="1.5"/>
+  <text x="967" y="310" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" font-weight="bold" fill="#000000">A-1</text>
+  <rect x="1038" y="284" width="38" height="42" rx="4" fill="#39ff88" stroke="#ff3dc8" stroke-width="1.5"/>
+  <text x="1057" y="310" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" font-weight="bold" fill="#000000">E-2</text>
+  <rect x="1308" y="284" width="38" height="42" rx="4" fill="#39ff88" stroke="#ff3dc8" stroke-width="1.5"/>
+  <text x="1327" y="310" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" font-weight="bold" fill="#000000">A-1</text>
+
+  <!-- RIGHT MIDDLE: CHORD STAB LANE (x=536..1420, y=362..474) -->
+  <rect x="536" y="362" width="884" height="112" rx="8" fill="#101828" stroke="#606a80" stroke-width="1.2"/>
+  <text x="556" y="390" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" font-weight="bold" fill="#00e5ff">CHORD STAB LANE &#183; KEYS (05)</text>
+  <text x="1400" y="390" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">groove: ..x...x...x...x.</text>
+
+  <text x="556" y="434" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#e2e8f0">Am7 &#8594; Dm7</text>
+
+  <!-- Chord Stab Pills at steps 2, 6, 10, 14 -->
+  <rect x="768" y="408" width="80" height="44" rx="6" fill="#0d3545" stroke="#00e5ff" stroke-width="1.2"/>
+  <text x="808" y="428" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="bold" fill="#00e5ff">Am7</text>
+  <text x="808" y="444" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="10" fill="#e2e8f0">A-2 05</text>
+
+  <rect x="948" y="408" width="80" height="44" rx="6" fill="#0d3545" stroke="#00e5ff" stroke-width="1.2"/>
+  <text x="988" y="428" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="bold" fill="#00e5ff">Am7</text>
+  <text x="988" y="444" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="10" fill="#e2e8f0">C-3 05</text>
+
+  <rect x="1128" y="408" width="80" height="44" rx="6" fill="#142b24" stroke="#39ff88" stroke-width="1.2"/>
+  <text x="1168" y="428" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="bold" fill="#39ff88">Dm7</text>
+  <text x="1168" y="444" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="10" fill="#e2e8f0">D-3 05</text>
+
+  <rect x="1308" y="408" width="80" height="44" rx="6" fill="#142b24" stroke="#39ff88" stroke-width="1.2"/>
+  <text x="1348" y="428" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="bold" fill="#39ff88">Em7</text>
+  <text x="1348" y="444" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="10" fill="#e2e8f0">E-3 05</text>
+
+  <!-- RIGHT BOTTOM: ASK THE MODEL + PROPOSAL WAITING (x=536..1420, y=488..690) -->
+  <rect x="536" y="488" width="884" height="202" rx="8" fill="#101828" stroke="#ff3dc8" stroke-width="1.5"/>
+  <text x="556" y="516" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" font-weight="bold" fill="#ff3dc8">ASK THE MODEL [p]</text>
+  <text x="1400" y="516" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#39ff88">proposal ready</text>
+
+  <!-- Prompt Input Box -->
+  <rect x="556" y="528" width="844" height="40" rx="4" fill="#0a0e14" stroke="#ff3dc8" stroke-width="1"/>
+  <text x="572" y="553" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" font-weight="bold" fill="#ff3dc8">ask&gt;</text>
+  <text x="622" y="553" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#e2e8f0">the bass needs more weight</text>
+
+  <!-- Proposal Waiting Box -->
+  <rect x="556" y="580" width="844" height="94" rx="6" fill="#201030" stroke="#ff3dc8" stroke-width="1"/>
+  <text x="572" y="604" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" font-weight="bold" fill="#ff3dc8">PROPOSAL WAITING &#183; 6 cells in CH3 (04 bass)</text>
+  <text x="572" y="628" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" fill="#e2e8f0">row 00, 16: A-1 04 C30 &#8594; A-1 04 C40 (+vol)  &#183;  row 06: E-2 04 ... &#8594; A-1 04 C38</text>
+  <text x="572" y="652" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">auditioning proposed pattern; space plays committed</text>
+
+  <!-- Accept / Reject / Undo Buttons -->
+  <rect x="1064" y="624" width="114" height="36" rx="4" fill="#39ff88"/>
+  <text x="1121" y="647" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" font-weight="bold" fill="#000000">a Accept</text>
+
+  <rect x="1188" y="624" width="114" height="36" rx="4" fill="#0a0e14" stroke="#ff3dc8" stroke-width="1.2"/>
+  <text x="1245" y="647" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" font-weight="bold" fill="#ff3dc8">r Reject</text>
+
+  <rect x="1312" y="624" width="76" height="36" rx="4" fill="#0a0e14" stroke="#606a80" stroke-width="1"/>
+  <text x="1350" y="647" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">u Undo</text>
+
+  <!-- BOTTOM TRACKER DIFF STRIP (y=704..830) -->
+  <rect x="20" y="704" width="1400" height="126" rx="6" fill="#0a0e14" stroke="#606a80" stroke-width="1"/>
+  <text x="36" y="726" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="bold" fill="#00e5ff">PATTERN 01 PREVIEW (PROPOSED CH3 HIGHLIGHTED)</text>
+  <line x1="20" y1="736" x2="1420" y2="736" stroke="#606a80" stroke-width="1"/>
+
+  <text x="48" y="760" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">15 &#9474; --- .. ...     &#9474; D-2 02 C16     &#9474; --- .. ...     &#9474; --- .. ...</text>
+  <rect x="21" y="768" width="1398" height="28" fill="#201030"/>
+  <text x="32" y="787" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" font-weight="bold" fill="#ff3dc8">&#9654;</text>
+  <text x="48" y="787" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" font-weight="bold" fill="#00e5ff">16 &#9474; C-2 01 ...     &#9474; --- .. ...     &#9474;</text>
+  <text x="454" y="787" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" font-weight="bold" fill="#39ff88">A-1 04 C40*</text>
+  <text x="580" y="787" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" font-weight="bold" fill="#00e5ff">&#9474; A-2 05 ED2</text>
+  <text x="48" y="815" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">17 &#9474; --- .. ...     &#9474; --- .. ...     &#9474; --- .. ...     &#9474; --- .. ...</text>
+
+  <!-- FOOTER BAR (y=842..884) -->
+  <rect x="20" y="842" width="1400" height="42" rx="6" fill="#101828" stroke="#606a80" stroke-width="1"/>
+  <text x="36" y="868" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">Space play/stop &#183; p ask model &#183; a accept &#183; r reject &#183; u undo &#183; c chord &#183; 1-4 mute &#183; &#8593;&#8595; row &#183; q back</text>
+  <text x="1404" y="868" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#ff3dc8">proposal waiting &#183; a accept / r reject</text>
+</svg>
