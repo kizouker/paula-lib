@@ -31,8 +31,13 @@ Candidates:
 6. #67 more example scores
 7. Submission: demo video, README, release
 
+Push 2, phase A walking skeleton (requirements ABL-3, 4, 6, 7 in #12, owner-approved 2026-11-18; rewritten as REQ drafts in Gherkin, waiting for approval):
+- REQ-004 the Push 2 display shows the tracker and follows playback
+- REQ-005 a pad press writes a kick on the current row
+- REQ-006 the MIDI traffic is logged in plain text
+
 ## Later (no sprint)
 
-#11 #12 #13 #14 #15 #16 #17 #18 #19 (specs and Ableton/MIDI), #39 networked band, #46 iPad, #42 themes, #43 retro chips, #32 remote playback, #34 website, #10 wiki, #20 licence-check skill, #1 filter from a sketch, local fine-tuned model for zouk.
+#11 #12 (phase B: Live and Max for Live) #13 #14 #15 #16 #17 #18 #19 (specs and Ableton/MIDI), #39 networked band, #46 iPad, #42 themes, #43 retro chips, #32 remote playback, #34 website, #10 wiki, #20 licence-check skill, #1 filter from a sketch, local fine-tuned model for zouk.
 
 Process work (not features): #94, #97.
