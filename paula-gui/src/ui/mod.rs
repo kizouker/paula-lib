@@ -39,6 +39,8 @@ impl GuiApp {
         {
             self.stream = None;
             let _ = self.app.open_module(&path);
+        } else {
+            self.app.status = "open cancelled".to_string();
         }
     }
 
@@ -154,7 +156,8 @@ impl eframe::App for GuiApp {
             }
         });
 
-        if self.app.status == "open .mod from the file dialog" {
+        // one dialog per click: the flag is cleared before the dialog opens, so Cancel ends it
+        if std::mem::take(&mut self.app.open_requested) {
             self.open_mod_dialog();
         }
 
