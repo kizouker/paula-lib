@@ -41,6 +41,7 @@ fn main() -> ExitCode {
                         return ExitCode::FAILURE;
                     }
                 };
+                player.source_path = Some(path);
                 if let Some(error) = audio_error {
                     player.status = paula_gui::audio::fallback_notice(error);
                 }
@@ -68,6 +69,12 @@ fn main() -> ExitCode {
             };
             match paula::score::compile_source(&source, &kit, strict) {
                 Ok((module, _warnings)) => {
+                    let parsed_score = paula::score::lint::analyze(
+                        &source,
+                        Some(&kit),
+                        &paula::score::lint::Options { strict },
+                    )
+                    .score;
                     let mut player = match PlayerState::new(module, score.display().to_string(), rate, audio_error.is_none()) {
                         Ok(player) => player,
                         Err(error) => {
@@ -75,6 +82,7 @@ fn main() -> ExitCode {
                             return ExitCode::FAILURE;
                         }
                     };
+                    player.set_score_context(Some(source), parsed_score, Some(kit), Some(score));
                     if let Some(error) = audio_error {
                         player.status = paula_gui::audio::fallback_notice(error);
                     }

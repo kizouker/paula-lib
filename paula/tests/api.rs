@@ -335,3 +335,20 @@ fn muted_channels_are_silent_and_new_engines_start_unmuted() {
     let e = paula::Engine::new(44100).unwrap();
     assert_eq!(e.muted(), [false; 4], "a new engine starts with nothing muted");
 }
+
+// ---------- play from a song position (seek) ----------
+
+#[test]
+fn play_from_starts_at_the_given_position_and_rejects_positions_past_the_end() {
+    let m = rio_zouk_on_demo_kit();
+    assert!(m.song_len > 2);
+    let mut e = paula::Engine::new(44100).unwrap();
+    e.load(&m).unwrap();
+    e.play_from(2).unwrap();
+    assert!(e.is_playing());
+    let mut buf = vec![0i16; 256];
+    e.render(&mut buf).unwrap();
+    assert_eq!(e.position().0, 2, "playing starts at song position 2, not 0");
+    assert!(e.play_from(m.song_len as usize).is_err(), "past the end is refused");
+    e.stop();
+}

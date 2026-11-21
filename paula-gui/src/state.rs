@@ -1,15 +1,17 @@
+use crate::ask::{self, AskScope};
 use crate::audio::AudioBackend;
-use crate::player::PlayerState;
-use crate::player::ViewMode;
-use paula::menu::Menu;
-use paula::menu::{Compiled, Saved};
+use crate::circle::CircleHit;
+use crate::player::{PlayerState, ViewMode};
+use paula::llm::score::ScoreProposal;
+use paula::menu::{Compiled, Menu, Saved};
 use paula::session::Proposal;
 use std::sync::{mpsc, mpsc::{Receiver, TryRecvError}};
 
 #[derive(Debug)]
 pub enum LlmEvent {
     Progress(String),
-    Done(Result<Proposal, String>),
+    DonePattern(Result<Proposal, String>),
+    DoneScore(Result<(ScoreProposal, Vec<String>), String>),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -46,6 +48,18 @@ pub enum Action {
     AcceptProposal,
     RejectProposal,
     UndoProposal,
+    ClearClip,
+    ClickCircle(CircleHit),
+    TogglePadDucking,
+    ToggleEditMode,
+    EditNextField,
+    EditPrevField,
+    EditRow(i32),
+    EditOctave(i8),
+    EditKey(char),
+    EditDelete,
+    EditBackspace,
+    SaveMod,
 }
 
 pub struct AppState {
@@ -76,23 +90,45 @@ impl AppState {
                         player.llm_progress = Some(progress);
                     }
                 }
-                Ok(LlmEvent::Done(Ok(proposal))) => {
+                Ok(LlmEvent::DonePattern(Ok(proposal))) => {
                     let count = proposal.cells.len();
                     if let Some(player) = self.player.as_mut() {
                         player.session.propose(proposal);
                         player.ask_open = false;
                         player.llm_in_flight = false;
-                        player.status = format!("proposal ready: {count} cells. a accept · r reject");
+                        player.status = format!("proposal ready: {count} cells. a accept · r reject · space audition");
                         self.status = player.status.clone();
                     }
                     self.llm_rx = None;
                     return;
                 }
-                Ok(LlmEvent::Done(Err(error))) => {
+                Ok(LlmEvent::DonePattern(Err(error))) => {
                     if let Some(player) = self.player.as_mut() {
                         player.ask_open = false;
                         player.llm_in_flight = false;
                         player.status = format!("model failed: {error}");
+                        self.status = player.status.clone();
+                    }
+                    self.llm_rx = None;
+                    return;
+                }
+                Ok(LlmEvent::DoneScore(Ok((score_proposal, diff)))) => {
+                    let changed = diff.len();
+                    if let Some(player) = self.player.as_mut() {
+                        player.pending_score_proposal = Some((score_proposal, diff));
+                        player.ask_open = false;
+                        player.llm_in_flight = false;
+                        player.status = format!("score proposal ready: {changed} changed lines. a accept · r reject · space audition");
+                        self.status = player.status.clone();
+                    }
+                    self.llm_rx = None;
+                    return;
+                }
+                Ok(LlmEvent::DoneScore(Err(error))) => {
+                    if let Some(player) = self.player.as_mut() {
+                        player.ask_open = false;
+                        player.llm_in_flight = false;
+                        player.status = format!("score model failed: {error}");
                         self.status = player.status.clone();
                     }
                     self.llm_rx = None;
@@ -168,11 +204,18 @@ impl AppState {
             }
         };
         self.status = menu.status.clone();
-        let player = PlayerState::new(compiled.module.clone(), "compiled score", self.rate, self.audio_available)
+        let score_path = menu.selected_score().map(std::path::Path::to_path_buf);
+        let kit = menu.kit().load().ok();
+        let score_toml = score_path.as_ref().and_then(|p| std::fs::read_to_string(p).ok());
+        let parsed_score = score_toml.as_deref().and_then(|src| {
+            paula::score::lint::analyze(src, kit.as_ref(), &paula::score::lint::Options { strict: false }).score
+        });
+        let mut player = PlayerState::new(compiled.module.clone(), "compiled score", self.rate, self.audio_available)
             .map_err(|e| {
                 self.status = e.clone();
                 e
             })?;
+        player.set_score_context(score_toml, parsed_score, kit, score_path);
         self.player = Some(player);
         self.screen = Screen::Player;
         Ok(compiled)
@@ -189,13 +232,18 @@ impl AppState {
                 self.status = error.clone();
                 return Err(error);
             }
+            player.source_path = Some(path.to_path_buf());
+            player.score = None;
+            player.score_toml = None;
+            player.kit = None;
             self.status = player.status.clone();
         } else {
-            let player = PlayerState::new(module, path.display().to_string(), self.rate, self.audio_available)
+            let mut player = PlayerState::new(module, path.display().to_string(), self.rate, self.audio_available)
                 .map_err(|e| {
                     self.status = e.clone();
                     e
                 })?;
+            player.source_path = Some(path.to_path_buf());
             self.status = player.status.clone();
             self.player = Some(player);
             self.screen = Screen::Player;
@@ -322,6 +370,8 @@ impl AppState {
                     player.ask_open = false;
                 } else {
                     let module = player.module().clone();
+                    let kit = player.kit.clone().unwrap_or_else(|| module.clone());
+                    let current_toml = player.score_toml.clone();
                     let tempo = match player.engine.as_ref() {
                         Some(engine) => {
                             let engine = engine.lock().unwrap();
@@ -330,25 +380,46 @@ impl AppState {
                         None => paula::llm::Tempo::default(),
                     };
                     let request = std::mem::take(&mut player.ask_input);
+                    let scope = ask::classify_ask(&request, current_toml.is_some());
                     let (tx, rx) = mpsc::channel();
                     player.ask_open = false;
                     player.llm_in_flight = true;
                     player.llm_progress = None;
-                    player.status = "asking the model...".to_string();
+                    player.status = match scope {
+                        AskScope::Song => "asking the model for a song score...".to_string(),
+                        AskScope::Pattern => "asking the model for a pattern...".to_string(),
+                    };
                     self.llm_rx = Some(rx);
-                    std::thread::spawn(move || {
-                        let result = paula::llm::client::Anthropic::from_env()
-                            .map_err(paula::llm::ComposeError::Model)
-                            .and_then(|mut model| paula::llm::compose(
-                                &mut model,
-                                &module,
-                                tempo,
-                                &request,
-                                &mut |progress| {
-                                    let _ = tx.send(LlmEvent::Progress(progress.to_string()));
-                                },
-                            ));
-                        let _ = tx.send(LlmEvent::Done(result.map_err(|error| error.to_string())));
+                    std::thread::spawn(move || match scope {
+                        AskScope::Song => {
+                            let result = paula::llm::client::Anthropic::from_env()
+                                .map_err(paula::llm::score::ScoreError::Model)
+                                .and_then(|mut model| ask::run_song_ask(
+                                    &mut model,
+                                    &request,
+                                    current_toml.as_deref(),
+                                    &kit,
+                                    false,
+                                    &mut |progress| {
+                                        let _ = tx.send(LlmEvent::Progress(progress.to_string()));
+                                    },
+                                ));
+                            let _ = tx.send(LlmEvent::DoneScore(result.map_err(|error| error.to_string())));
+                        }
+                        AskScope::Pattern => {
+                            let result = paula::llm::client::Anthropic::from_env()
+                                .map_err(paula::llm::ComposeError::Model)
+                                .and_then(|mut model| paula::llm::compose(
+                                    &mut model,
+                                    &module,
+                                    tempo,
+                                    &request,
+                                    &mut |progress| {
+                                        let _ = tx.send(LlmEvent::Progress(progress.to_string()));
+                                    },
+                                ));
+                            let _ = tx.send(LlmEvent::DonePattern(result.map_err(|error| error.to_string())));
+                        }
                     });
                 }
                 self.status = player.status.clone();
@@ -363,6 +434,52 @@ impl AppState {
             },
             Action::UndoProposal => if let Some(player) = self.player.as_mut() {
                 player.undo_proposal();
+                self.status = player.status.clone();
+            },
+            Action::ClearClip => if let Some(player) = self.player.as_mut() {
+                player.master_meter.clear_clip();
+                self.status = "clip indicator cleared".to_string();
+                player.status = self.status.clone();
+            },
+            Action::ClickCircle(hit) => if let Some(player) = self.player.as_mut() {
+                player.click_circle(hit, audio);
+                self.status = player.status.clone();
+            },
+            Action::TogglePadDucking => if let Some(player) = self.player.as_mut() {
+                player.toggle_pad_ducking();
+                self.status = player.status.clone();
+            },
+            Action::ToggleEditMode => if let Some(player) = self.player.as_mut() {
+                player.toggle_edit_mode();
+                self.status = player.status.clone();
+            },
+            Action::EditNextField => if let Some(player) = self.player.as_mut() {
+                player.edit_next_field();
+            },
+            Action::EditPrevField => if let Some(player) = self.player.as_mut() {
+                player.edit_prev_field();
+            },
+            Action::EditRow(delta) => if let Some(player) = self.player.as_mut() {
+                player.edit_step_row(delta);
+            },
+            Action::EditOctave(delta) => if let Some(player) = self.player.as_mut() {
+                player.edit_octave_delta(delta);
+                self.status = player.status.clone();
+            },
+            Action::EditKey(ch) => if let Some(player) = self.player.as_mut() {
+                player.edit_key(ch);
+                self.status = player.status.clone();
+            },
+            Action::EditDelete => if let Some(player) = self.player.as_mut() {
+                player.edit_delete();
+                self.status = player.status.clone();
+            },
+            Action::EditBackspace => if let Some(player) = self.player.as_mut() {
+                player.edit_backspace();
+                self.status = player.status.clone();
+            },
+            Action::SaveMod => if let Some(player) = self.player.as_mut() {
+                let _ = player.save_mod();
                 self.status = player.status.clone();
             },
         }
