@@ -334,7 +334,7 @@ fn duck_must_name_another_role_on_another_channel() {
 
 #[test]
 fn ducking_makes_the_pad_quieter_right_after_the_kick() {
-    // render the pad alone, with and without the duck: just after row 8 it must be quieter
+    // render the pad alone, with and without the duck
     let ducked = compile(&format!("{HEAD}{DUCK_SONG}"));
     let plain = compile(&format!("{HEAD}{}", DUCK_SONG.replace("duck = \"kick\"\n", "")));
     let solo = |m: &Module| {
@@ -355,7 +355,10 @@ fn ducking_makes_the_pad_quieter_right_after_the_kick() {
         let (s, e) = ((from * row) as usize * 2, ((from + 0.5) * row) as usize * 2);
         pcm[s..e].iter().map(|v| (*v as f64).powi(2)).sum::<f64>()
     };
-    assert!(level(&a, 8.2) < level(&b, 8.2) * 0.6, "the pad dips after the second kick");
-    assert!(level(&a, 4.2) <= level(&b, 4.2) * 1.02, "ducking never makes the pad louder than without it");
-    assert!(level(&a, 12.2) > level(&b, 12.2) * 0.95, "and it is back at its own volume before the next bar");
+    // the demo keys are a 1.2 s decaying tone (no loop), so test the first kick: the pad starts
+    // with it, dips, and is back at its own volume by row 4
+    assert!(level(&b, 0.2) > 0.0, "the pad sounds");
+    assert!(level(&a, 0.2) < level(&b, 0.2) * 0.6, "the pad dips under the kick");
+    let (back, plain) = (level(&a, 4.2), level(&b, 4.2));
+    assert!(back > plain * 0.95 && back <= plain * 1.02, "back at its own volume, never louder ({back} vs {plain})");
 }
