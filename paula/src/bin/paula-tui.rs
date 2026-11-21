@@ -368,6 +368,14 @@ fn event_loop(terminal: &mut DefaultTerminal, app: &mut App) -> Result<(), Strin
                 let muted = app.engine.lock().unwrap().toggle_mute(ch);
                 app.status = format!("channel {} {}", ch + 1, if muted { "muted" } else { "on" });
             }
+            KeyCode::Char(c @ ('+' | '=' | '-')) => {
+                let mut e = app.engine.lock().unwrap();
+                let bpm = (e.bpm() as i32 + if c == '-' { -2 } else { 2 }).clamp(32, 255) as u16;
+                app.status = match e.set_bpm(bpm) {
+                    Ok(()) => format!("{bpm} BPM (the song's own tempo returns when it loops)"),
+                    Err(err) => format!("tempo not changed: {err}"),
+                };
+            }
             KeyCode::Up => step(app, -1),
             KeyCode::Down => step(app, 1),
             KeyCode::PageUp => step(app, -16),
@@ -632,7 +640,7 @@ fn draw_diesel(f: &mut Frame, app: &App, body: Rect) {
 }
 
 fn draw_footer(f: &mut Frame, app: &App, foot: Rect) {
-    let keys = "space play/stop · 1-4 mute · ↑↓ row · PgUp/PgDn 16 rows · ←→ position · f follow · s view · d diesel · p ask model · a accept · r reject · u undo · q quit";
+    let keys = "space play/stop · 1-4 mute · +/- BPM · ↑↓ row · PgUp/PgDn 16 rows · ←→ position · f follow · s view · d diesel · p ask model · a accept · r reject · u undo · q quit";
     let first = match &app.input {
         Some(t) => Line::from(vec![Span::styled("ask> ", Style::default().fg(PINK)), Span::raw(t.as_str()), Span::styled("▏", Style::default().fg(CYAN)), Span::styled("   Enter send · Esc cancel", Style::default().fg(DIM))]),
         None => Line::from(Span::styled(keys, Style::default().fg(DIM))),

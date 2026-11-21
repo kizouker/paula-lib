@@ -151,7 +151,7 @@ pub fn draw(
     let hints = if app.player.as_ref().is_some_and(|player| player.session.proposal().is_some()) {
         "a accept · r reject · u undo · space play committed · p asks when resolved"
     } else {
-        "space play/stop · 1-4 mute · ↑↓ row · PgUp/PgDn 16 · ←→ pos · f follow · s view · p ask · q back"
+        "space play/stop · 1-4 mute · +/- BPM · ↑↓ row · PgUp/PgDn 16 · ←→ pos · f follow · s view · p ask · q back"
     };
     ui.label(RichText::new(hints).color(dim()).monospace());
     ui.label(RichText::new(status).color(dim()).monospace());

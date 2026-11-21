@@ -270,6 +270,21 @@ impl PlayerState {
     pub fn toggle_follow(&mut self) { self.follow = !self.follow; }
 
     /// Mute or unmute channel `ch` (0..4). Silent players (no audio device) only report it.
+    /// Change the BPM by `delta` (32..=255) on the running engine. The song's own tempo effect
+    /// sets it back when the song loops to its first pattern.
+    pub fn change_bpm(&mut self, delta: i32) {
+        let Some(engine) = self.engine.as_ref() else {
+            self.status = "no audio device; tempo not changed".to_string();
+            return;
+        };
+        let mut e = engine.lock().unwrap();
+        let bpm = (e.bpm() as i32 + delta).clamp(32, 255) as u16;
+        self.status = match e.set_bpm(bpm) {
+            Ok(()) => format!("{bpm} BPM (+/- to change; the song's own tempo returns when it loops)"),
+            Err(err) => format!("tempo not changed: {err}"),
+        };
+    }
+
     pub fn toggle_mute(&mut self, ch: usize) {
         let Some(engine) = self.engine.as_ref() else {
             self.status = "no audio device; nothing to mute".to_string();
@@ -342,5 +357,19 @@ mod tests {
         player.toggle_play(&SimulatedAudio::unavailable("none"));
         assert!(!player.is_playing());
         assert!(player.status.contains("cannot play"));
+    }
+}
+
+#[cfg(test)]
+mod tempo_tests {
+    use super::*;
+    use crate::audio::SimulatedAudio;
+
+    #[test]
+    fn bpm_keys_without_audio_only_report() {
+        let _ = SimulatedAudio::default;
+        let mut p = PlayerState::new(Module::empty(), "t", 44100, false).unwrap();
+        p.change_bpm(2);
+        assert!(p.status.contains("no audio device"), "{}", p.status);
     }
 }
