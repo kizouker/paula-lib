@@ -1,0 +1,333 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <!-- Background Canvas -->
+  <rect x="0" y="0" width="1440" height="900" fill="#0a0e14"/>
+
+  <!-- BIG TRANSPORT BAR (y=16..120) -->
+  <rect x="20" y="16" width="1400" height="104" rx="8" fill="#101828" stroke="#606a80" stroke-width="1.2"/>
+
+  <!-- Big Play & Stop Buttons -->
+  <rect x="36" y="32" width="144" height="72" rx="6" fill="#39ff88"/>
+  <text x="108" y="68" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="20" font-weight="bold" fill="#000000">&#9654; PLAY</text>
+  <text x="108" y="90" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#000000">[Space]</text>
+
+  <rect x="192" y="32" width="96" height="72" rx="6" fill="#0a0e14" stroke="#606a80" stroke-width="1.2"/>
+  <text x="240" y="68" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="16" font-weight="bold" fill="#606a80">&#9632; STOP</text>
+  <text x="240" y="90" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">[Space]</text>
+
+  <!-- Big BPM Readout -->
+  <rect x="312" y="28" width="176" height="80" rx="6" fill="#0a0e14" stroke="#00e5ff" stroke-width="1"/>
+  <text x="328" y="50" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">TEMPO (BPM)</text>
+  <text x="328" y="94" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="40" font-weight="bold" fill="#00e5ff">86</text>
+  <text x="404" y="92" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#39ff88">ZOUK</text>
+
+  <!-- Big Position Readout -->
+  <rect x="504" y="28" width="236" height="80" rx="6" fill="#0a0e14" stroke="#606a80" stroke-width="1"/>
+  <text x="520" y="50" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">POSITION &#183; PAT 01 &#183; ROW 16</text>
+  <text x="520" y="94" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="36" font-weight="bold" fill="#e2e8f0">02</text>
+  <text x="572" y="94" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="28" fill="#606a80">/36</text>
+  <text x="652" y="90" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">[&#8592; &#8594;]</text>
+
+  <!-- Track Title & Key -->
+  <text x="764" y="56" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="20" font-weight="bold" fill="#00e5ff">RIO ZOUK</text>
+  <text x="764" y="80" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" fill="#606a80">A aeolian &#183; 4/4 &#183; speed 6 &#183; 44100 Hz</text>
+  <text x="764" y="100" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#ff3dc8">1 channel muted (CH2 chick)</text>
+
+  <!-- Right Transport Controls -->
+  <rect x="1146" y="34" width="124" height="32" rx="4" fill="#00e5ff"/>
+  <text x="1208" y="55" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="bold" fill="#000000">f Follow: ON</text>
+
+  <rect x="1280" y="34" width="124" height="32" rx="4" fill="#0a0e14" stroke="#606a80" stroke-width="1"/>
+  <text x="1342" y="55" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#e2e8f0">Open .mod...</text>
+
+  <rect x="1146" y="74" width="124" height="30" rx="4" fill="#0a0e14" stroke="#606a80" stroke-width="1"/>
+  <text x="1208" y="93" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#00e5ff">s Console</text>
+
+  <rect x="1280" y="74" width="124" height="30" rx="4" fill="#0a0e14" stroke="#606a80" stroke-width="1"/>
+  <text x="1342" y="93" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">&#8592; Scores [q]</text>
+
+  <!-- FOUR CHANNEL STRIPS (y=136..584) -->
+  <!-- Strip 1: CH1 KICK (x=20..358) -->
+  <rect x="20" y="136" width="338" height="448" rx="8" fill="#101828" stroke="#00e5ff" stroke-width="1.2"/>
+  <text x="38" y="168" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="16" font-weight="bold" fill="#00e5ff">CH1 &#183; KICK</text>
+  <text x="38" y="188" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">sample 01 &#183; bom (3-2)</text>
+
+  <rect x="242" y="148" width="100" height="34" rx="4" fill="#0a0e14" stroke="#00e5ff" stroke-width="1"/>
+  <text x="292" y="170" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="bold" fill="#00e5ff">[1] MUTE</text>
+
+  <!-- CH1 VU Meter (left column of strip) -->
+  <rect x="38" y="206" width="68" height="290" rx="4" fill="#0a0e14" stroke="#606a80" stroke-width="1"/>
+  <text x="72" y="224" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#00e5ff">78%</text>
+  <!-- 14 VU segments (bottom-up, 11 lit) -->
+  <rect x="48" y="236" width="48" height="14" rx="2" fill="#182234"/>
+  <rect x="48" y="254" width="48" height="14" rx="2" fill="#182234"/>
+  <rect x="48" y="272" width="48" height="14" rx="2" fill="#ff3dc8"/>
+  <rect x="48" y="290" width="48" height="14" rx="2" fill="#00e5ff"/>
+  <rect x="48" y="308" width="48" height="14" rx="2" fill="#00e5ff"/>
+  <rect x="48" y="326" width="48" height="14" rx="2" fill="#00e5ff"/>
+  <rect x="48" y="344" width="48" height="14" rx="2" fill="#39ff88"/>
+  <rect x="48" y="362" width="48" height="14" rx="2" fill="#39ff88"/>
+  <rect x="48" y="380" width="48" height="14" rx="2" fill="#39ff88"/>
+  <rect x="48" y="398" width="48" height="14" rx="2" fill="#39ff88"/>
+  <rect x="48" y="416" width="48" height="14" rx="2" fill="#39ff88"/>
+  <rect x="48" y="434" width="48" height="14" rx="2" fill="#39ff88"/>
+  <rect x="48" y="452" width="48" height="14" rx="2" fill="#39ff88"/>
+  <rect x="48" y="470" width="48" height="14" rx="2" fill="#39ff88"/>
+
+  <!-- CH1 Mini Spectrum (16 bands) -->
+  <rect x="120" y="206" width="222" height="290" rx="4" fill="#0a0e14" stroke="#606a80" stroke-width="1"/>
+  <text x="132" y="224" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">SPECTRUM 50Hz-10k</text>
+  <!-- 16 bars low-end heavy -->
+  <rect x="132" y="320" width="9" height="156" rx="1" fill="#00e5ff"/>
+  <rect x="145" y="260" width="9" height="216" rx="1" fill="#00e5ff"/>
+  <rect x="158" y="246" width="9" height="230" rx="1" fill="#00e5ff"/>
+  <rect x="171" y="290" width="9" height="186" rx="1" fill="#00e5ff"/>
+  <rect x="184" y="340" width="9" height="136" rx="1" fill="#00e5ff"/>
+  <rect x="197" y="380" width="9" height="96" rx="1" fill="#00e5ff"/>
+  <rect x="210" y="410" width="9" height="66" rx="1" fill="#00e5ff"/>
+  <rect x="223" y="430" width="9" height="46" rx="1" fill="#00e5ff"/>
+  <rect x="236" y="446" width="9" height="30" rx="1" fill="#606a80"/>
+  <rect x="249" y="456" width="9" height="20" rx="1" fill="#606a80"/>
+  <rect x="262" y="464" width="9" height="12" rx="1" fill="#606a80"/>
+  <rect x="275" y="468" width="9" height="8" rx="1" fill="#606a80"/>
+  <rect x="288" y="470" width="9" height="6" rx="1" fill="#606a80"/>
+  <rect x="301" y="472" width="9" height="4" rx="1" fill="#606a80"/>
+  <rect x="314" y="472" width="9" height="4" rx="1" fill="#606a80"/>
+  <rect x="327" y="472" width="9" height="4" rx="1" fill="#606a80"/>
+
+  <!-- CH1 Last Cell -->
+  <rect x="38" y="510" width="304" height="58" rx="4" fill="#0a0e14" stroke="#606a80" stroke-width="1"/>
+  <text x="52" y="532" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">CURRENT CELL (ROW 16)</text>
+  <text x="52" y="555" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="16" font-weight="bold" fill="#00e5ff">C-2</text>
+  <text x="96" y="555" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="16" font-weight="bold" fill="#39ff88">01</text>
+  <text x="128" y="555" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="16" fill="#606a80">...</text>
+
+  <!-- Strip 2: CH2 CHICK (MUTED!) (x=374..712) -->
+  <rect x="374" y="136" width="338" height="448" rx="8" fill="#0d121c" stroke="#ff3dc8" stroke-width="1.2"/>
+  <text x="392" y="168" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="16" font-weight="bold" fill="#606a80">CH2 &#183; CHICK</text>
+  <text x="392" y="188" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">sample 02 &#183; laid-back ED2</text>
+
+  <rect x="596" y="148" width="100" height="34" rx="4" fill="#ff3dc8"/>
+  <text x="646" y="170" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="bold" fill="#000000">[2] MUTED</text>
+
+  <!-- CH2 VU Meter (all dark) -->
+  <rect x="392" y="206" width="68" height="290" rx="4" fill="#0a0e14" stroke="#606a80" stroke-width="1"/>
+  <text x="426" y="224" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">0%</text>
+  <rect x="402" y="236" width="48" height="14" rx="2" fill="#141a26"/>
+  <rect x="402" y="254" width="48" height="14" rx="2" fill="#141a26"/>
+  <rect x="402" y="272" width="48" height="14" rx="2" fill="#141a26"/>
+  <rect x="402" y="290" width="48" height="14" rx="2" fill="#141a26"/>
+  <rect x="402" y="308" width="48" height="14" rx="2" fill="#141a26"/>
+  <rect x="402" y="326" width="48" height="14" rx="2" fill="#141a26"/>
+  <rect x="402" y="344" width="48" height="14" rx="2" fill="#141a26"/>
+  <rect x="402" y="362" width="48" height="14" rx="2" fill="#141a26"/>
+  <rect x="402" y="380" width="48" height="14" rx="2" fill="#141a26"/>
+  <rect x="402" y="398" width="48" height="14" rx="2" fill="#141a26"/>
+  <rect x="402" y="416" width="48" height="14" rx="2" fill="#141a26"/>
+  <rect x="402" y="434" width="48" height="14" rx="2" fill="#141a26"/>
+  <rect x="402" y="452" width="48" height="14" rx="2" fill="#141a26"/>
+  <rect x="402" y="470" width="48" height="14" rx="2" fill="#141a26"/>
+
+  <!-- CH2 Mini Spectrum (flat/muted) -->
+  <rect x="474" y="206" width="222" height="290" rx="4" fill="#0a0e14" stroke="#606a80" stroke-width="1"/>
+  <text x="486" y="224" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">SPECTRUM 50Hz-10k</text>
+  <line x1="486" y1="476" x2="684" y2="476" stroke="#606a80" stroke-width="2"/>
+  <rect x="530" y="330" width="110" height="32" rx="4" fill="#101828" stroke="#ff3dc8" stroke-width="1"/>
+  <text x="585" y="351" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" font-weight="bold" fill="#ff3dc8">MUTED</text>
+
+  <!-- CH2 Last Cell -->
+  <rect x="392" y="510" width="304" height="58" rx="4" fill="#0a0e14" stroke="#606a80" stroke-width="1"/>
+  <text x="406" y="532" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">SILENCED (PRESS 2 TO UNMUTE)</text>
+  <text x="406" y="555" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="16" fill="#606a80">D-2 02 ED2 (muted)</text>
+
+  <!-- Strip 3: CH3 BASS (x=728..1066) -->
+  <rect x="728" y="136" width="338" height="448" rx="8" fill="#101828" stroke="#39ff88" stroke-width="1.2"/>
+  <text x="746" y="168" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="16" font-weight="bold" fill="#39ff88">CH3 &#183; BASS</text>
+  <text x="746" y="188" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">sample 04 &#183; root-fifth</text>
+
+  <rect x="950" y="148" width="100" height="34" rx="4" fill="#0a0e14" stroke="#39ff88" stroke-width="1"/>
+  <text x="1000" y="170" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="bold" fill="#39ff88">[3] MUTE</text>
+
+  <!-- CH3 VU Meter -->
+  <rect x="746" y="206" width="68" height="290" rx="4" fill="#0a0e14" stroke="#606a80" stroke-width="1"/>
+  <text x="780" y="224" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#39ff88">64%</text>
+  <rect x="756" y="236" width="48" height="14" rx="2" fill="#182234"/>
+  <rect x="756" y="254" width="48" height="14" rx="2" fill="#182234"/>
+  <rect x="756" y="272" width="48" height="14" rx="2" fill="#182234"/>
+  <rect x="756" y="290" width="48" height="14" rx="2" fill="#182234"/>
+  <rect x="756" y="308" width="48" height="14" rx="2" fill="#00e5ff"/>
+  <rect x="756" y="326" width="48" height="14" rx="2" fill="#00e5ff"/>
+  <rect x="756" y="344" width="48" height="14" rx="2" fill="#39ff88"/>
+  <rect x="756" y="362" width="48" height="14" rx="2" fill="#39ff88"/>
+  <rect x="756" y="380" width="48" height="14" rx="2" fill="#39ff88"/>
+  <rect x="756" y="398" width="48" height="14" rx="2" fill="#39ff88"/>
+  <rect x="756" y="416" width="48" height="14" rx="2" fill="#39ff88"/>
+  <rect x="756" y="434" width="48" height="14" rx="2" fill="#39ff88"/>
+  <rect x="756" y="452" width="48" height="14" rx="2" fill="#39ff88"/>
+  <rect x="756" y="470" width="48" height="14" rx="2" fill="#39ff88"/>
+
+  <!-- CH3 Mini Spectrum -->
+  <rect x="828" y="206" width="222" height="290" rx="4" fill="#0a0e14" stroke="#606a80" stroke-width="1"/>
+  <text x="840" y="224" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">SPECTRUM 50Hz-10k</text>
+  <rect x="840" y="350" width="9" height="126" rx="1" fill="#39ff88"/>
+  <rect x="853" y="296" width="9" height="180" rx="1" fill="#39ff88"/>
+  <rect x="866" y="270" width="9" height="206" rx="1" fill="#39ff88"/>
+  <rect x="879" y="286" width="9" height="190" rx="1" fill="#39ff88"/>
+  <rect x="892" y="320" width="9" height="156" rx="1" fill="#39ff88"/>
+  <rect x="905" y="360" width="9" height="116" rx="1" fill="#39ff88"/>
+  <rect x="918" y="396" width="9" height="80" rx="1" fill="#39ff88"/>
+  <rect x="931" y="424" width="9" height="52" rx="1" fill="#39ff88"/>
+  <rect x="944" y="444" width="9" height="32" rx="1" fill="#606a80"/>
+  <rect x="957" y="456" width="9" height="20" rx="1" fill="#606a80"/>
+  <rect x="970" y="464" width="9" height="12" rx="1" fill="#606a80"/>
+  <rect x="983" y="468" width="9" height="8" rx="1" fill="#606a80"/>
+  <rect x="996" y="472" width="9" height="4" rx="1" fill="#606a80"/>
+  <rect x="1009" y="472" width="9" height="4" rx="1" fill="#606a80"/>
+  <rect x="1022" y="472" width="9" height="4" rx="1" fill="#606a80"/>
+  <rect x="1035" y="472" width="9" height="4" rx="1" fill="#606a80"/>
+
+  <!-- CH3 Last Cell -->
+  <rect x="746" y="510" width="304" height="58" rx="4" fill="#0a0e14" stroke="#606a80" stroke-width="1"/>
+  <text x="760" y="532" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">CURRENT CELL (ROW 16)</text>
+  <text x="760" y="555" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="16" font-weight="bold" fill="#00e5ff">A-1</text>
+  <text x="804" y="555" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="16" font-weight="bold" fill="#39ff88">04</text>
+  <text x="836" y="555" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="16" font-weight="bold" fill="#ff3dc8">C38</text>
+
+  <!-- Strip 4: CH4 KEYS (x=1082..1420) -->
+  <rect x="1082" y="136" width="338" height="448" rx="8" fill="#101828" stroke="#00e5ff" stroke-width="1.2"/>
+  <text x="1100" y="168" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="16" font-weight="bold" fill="#00e5ff">CH4 &#183; KEYS</text>
+  <text x="1100" y="188" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">sample 05 &#183; chord-tones</text>
+
+  <rect x="1304" y="148" width="100" height="34" rx="4" fill="#0a0e14" stroke="#00e5ff" stroke-width="1"/>
+  <text x="1354" y="170" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="bold" fill="#00e5ff">[4] MUTE</text>
+
+  <!-- CH4 VU Meter -->
+  <rect x="1100" y="206" width="68" height="290" rx="4" fill="#0a0e14" stroke="#606a80" stroke-width="1"/>
+  <text x="1134" y="224" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#00e5ff">46%</text>
+  <rect x="1110" y="236" width="48" height="14" rx="2" fill="#182234"/>
+  <rect x="1110" y="254" width="48" height="14" rx="2" fill="#182234"/>
+  <rect x="1110" y="272" width="48" height="14" rx="2" fill="#182234"/>
+  <rect x="1110" y="290" width="48" height="14" rx="2" fill="#182234"/>
+  <rect x="1110" y="308" width="48" height="14" rx="2" fill="#182234"/>
+  <rect x="1110" y="326" width="48" height="14" rx="2" fill="#182234"/>
+  <rect x="1110" y="344" width="48" height="14" rx="2" fill="#00e5ff"/>
+  <rect x="1110" y="362" width="48" height="14" rx="2" fill="#00e5ff"/>
+  <rect x="1110" y="380" width="48" height="14" rx="2" fill="#39ff88"/>
+  <rect x="1110" y="398" width="48" height="14" rx="2" fill="#39ff88"/>
+  <rect x="1110" y="416" width="48" height="14" rx="2" fill="#39ff88"/>
+  <rect x="1110" y="434" width="48" height="14" rx="2" fill="#39ff88"/>
+  <rect x="1110" y="452" width="48" height="14" rx="2" fill="#39ff88"/>
+  <rect x="1110" y="470" width="48" height="14" rx="2" fill="#39ff88"/>
+
+  <!-- CH4 Mini Spectrum (mid-highs) -->
+  <rect x="1182" y="206" width="222" height="290" rx="4" fill="#0a0e14" stroke="#606a80" stroke-width="1"/>
+  <text x="1194" y="224" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">SPECTRUM 50Hz-10k</text>
+  <rect x="1194" y="466" width="9" height="10" rx="1" fill="#606a80"/>
+  <rect x="1207" y="458" width="9" height="18" rx="1" fill="#606a80"/>
+  <rect x="1220" y="440" width="9" height="36" rx="1" fill="#00e5ff"/>
+  <rect x="1233" y="400" width="9" height="76" rx="1" fill="#00e5ff"/>
+  <rect x="1246" y="356" width="9" height="120" rx="1" fill="#00e5ff"/>
+  <rect x="1259" y="320" width="9" height="156" rx="1" fill="#00e5ff"/>
+  <rect x="1272" y="294" width="9" height="182" rx="1" fill="#00e5ff"/>
+  <rect x="1285" y="310" width="9" height="166" rx="1" fill="#00e5ff"/>
+  <rect x="1298" y="336" width="9" height="140" rx="1" fill="#00e5ff"/>
+  <rect x="1311" y="366" width="9" height="110" rx="1" fill="#00e5ff"/>
+  <rect x="1324" y="396" width="9" height="80" rx="1" fill="#00e5ff"/>
+  <rect x="1337" y="420" width="9" height="56" rx="1" fill="#00e5ff"/>
+  <rect x="1350" y="440" width="9" height="36" rx="1" fill="#606a80"/>
+  <rect x="1363" y="454" width="9" height="22" rx="1" fill="#606a80"/>
+  <rect x="1376" y="464" width="9" height="12" rx="1" fill="#606a80"/>
+  <rect x="1389" y="468" width="9" height="8" rx="1" fill="#606a80"/>
+
+  <!-- CH4 Last Cell -->
+  <rect x="1100" y="510" width="304" height="58" rx="4" fill="#0a0e14" stroke="#606a80" stroke-width="1"/>
+  <text x="1114" y="532" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">CURRENT CELL (ROW 16)</text>
+  <text x="1114" y="555" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="16" font-weight="bold" fill="#00e5ff">A-2</text>
+  <text x="1158" y="555" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="16" font-weight="bold" fill="#39ff88">05</text>
+  <text x="1190" y="555" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="16" font-weight="bold" fill="#ff3dc8">ED2</text>
+
+  <!-- COMPACT TRACKER STRIP (y=598..832) -->
+  <rect x="20" y="598" width="1400" height="234" rx="8" fill="#0a0e14" stroke="#606a80" stroke-width="1"/>
+  <rect x="21" y="599" width="1398" height="30" fill="#101828"/>
+  <line x1="20" y1="629" x2="1420" y2="629" stroke="#606a80" stroke-width="1"/>
+  <text x="36" y="619" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="bold" fill="#00e5ff">COMPACT TRACKER &#183; PAT 01</text>
+  <text x="1404" y="619" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#606a80">&#8593;&#8595; row &#183; PgUp/PgDn 16</text>
+
+  <!-- Column dividers aligned with the 4 strips above -->
+  <line x1="94" y1="629" x2="94" y2="832" stroke="#606a80" stroke-width="1"/>
+  <line x1="370" y1="629" x2="370" y2="832" stroke="#606a80" stroke-width="1"/>
+  <line x1="720" y1="629" x2="720" y2="832" stroke="#606a80" stroke-width="1"/>
+  <line x1="1074" y1="629" x2="1074" y2="832" stroke="#606a80" stroke-width="1"/>
+
+  <!-- Row 14 -->
+  <text x="56" y="656" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">14</text>
+  <text x="128" y="656" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#00e5ff">C-2</text>
+  <text x="166" y="656" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#39ff88">01</text>
+  <text x="196" y="656" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">...</text>
+  <text x="410" y="656" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">--- .. ... (muted)</text>
+  <text x="760" y="656" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#00e5ff">E-2</text>
+  <text x="798" y="656" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#39ff88">04</text>
+  <text x="828" y="656" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">...</text>
+  <text x="1114" y="656" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#00e5ff">G-3</text>
+  <text x="1152" y="656" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#39ff88">05</text>
+  <text x="1182" y="656" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#ff3dc8">C26</text>
+
+  <!-- Row 15 -->
+  <text x="56" y="684" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">15</text>
+  <text x="128" y="684" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">--- .. ...</text>
+  <text x="410" y="684" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">D-2 02 C16 (muted)</text>
+  <text x="760" y="684" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">--- .. ...</text>
+  <text x="1114" y="684" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">--- .. ...</text>
+
+  <!-- Row 16: ACTIVE PLAY ROW -->
+  <rect x="21" y="694" width="1398" height="28" fill="#201030"/>
+  <text x="34" y="713" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" font-weight="bold" fill="#ff3dc8">&#9654;</text>
+  <text x="56" y="713" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" font-weight="bold" fill="#00e5ff">16</text>
+  <text x="128" y="713" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" font-weight="bold" fill="#00e5ff">C-2</text>
+  <text x="166" y="713" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" font-weight="bold" fill="#39ff88">01</text>
+  <text x="196" y="713" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">...</text>
+  <text x="410" y="713" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">--- .. ... (muted)</text>
+  <text x="760" y="713" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" font-weight="bold" fill="#00e5ff">A-1</text>
+  <text x="798" y="713" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" font-weight="bold" fill="#39ff88">04</text>
+  <text x="828" y="713" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" font-weight="bold" fill="#ff3dc8">C38</text>
+  <text x="1114" y="713" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" font-weight="bold" fill="#00e5ff">A-2</text>
+  <text x="1152" y="713" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" font-weight="bold" fill="#39ff88">05</text>
+  <text x="1182" y="713" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" font-weight="bold" fill="#ff3dc8">ED2</text>
+
+  <!-- Row 17 -->
+  <text x="56" y="741" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">17</text>
+  <text x="128" y="741" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">--- .. ...</text>
+  <text x="410" y="741" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">--- .. ...</text>
+  <text x="760" y="741" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">--- .. ...</text>
+  <text x="1114" y="741" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">--- .. ...</text>
+
+  <!-- Row 18 -->
+  <text x="56" y="769" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">18</text>
+  <text x="128" y="769" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">--- .. ...</text>
+  <text x="410" y="769" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">--- .. ...</text>
+  <text x="760" y="769" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">--- .. ...</text>
+  <text x="1114" y="769" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#00e5ff">C-3</text>
+  <text x="1152" y="769" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#39ff88">05</text>
+  <text x="1182" y="769" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#ff3dc8">ED2</text>
+
+  <!-- Row 19 -->
+  <text x="56" y="797" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">19</text>
+  <text x="128" y="797" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">--- .. ...</text>
+  <text x="410" y="797" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">--- .. ...</text>
+  <text x="760" y="797" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">--- .. ...</text>
+  <text x="1114" y="797" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">--- .. ...</text>
+
+  <!-- Row 20 (beat row) -->
+  <text x="56" y="823" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" font-weight="bold" fill="#00e5ff">20</text>
+  <text x="128" y="823" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">--- .. ...</text>
+  <text x="410" y="823" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">D-2 02 ED2 (muted)</text>
+  <text x="760" y="823" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">--- .. ...</text>
+  <text x="1114" y="823" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#00e5ff">E-3</text>
+  <text x="1152" y="823" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#39ff88">05</text>
+  <text x="1182" y="823" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#ff3dc8">C28</text>
+
+  <!-- FOOTER BAR (y=842..884) -->
+  <rect x="20" y="842" width="1400" height="42" rx="6" fill="#101828" stroke="#606a80" stroke-width="1"/>
+  <text x="36" y="868" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">Space play/stop &#183; 1-4 mute channel &#183; &#8593;&#8595; row &#183; &#8592;&#8594; pos &#183; f follow &#183; s view &#183; p ask &#183; q back</text>
+  <text x="1404" y="868" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#39ff88">playing &#183; 86 BPM &#183; CH2 muted</text>
+</svg>

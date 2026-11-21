@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <!-- Background Canvas -->
+  <rect x="0" y="0" width="1440" height="900" fill="#0a0e14"/>
+
+  <!-- Outer Amiga-style Bezel Frame -->
+  <rect x="12" y="12" width="1416" height="876" rx="4" fill="#0a0e14" stroke="#606a80" stroke-width="1.5"/>
+
+  <!-- TOP HEADER BAR (y=20..76) -->
+  <rect x="24" y="20" width="1392" height="56" rx="4" fill="#101828" stroke="#606a80" stroke-width="1"/>
+
+  <rect x="36" y="34" width="94" height="28" rx="4" fill="#00e5ff"/>
+  <text x="83" y="53" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" font-weight="bold" fill="#000000">scores</text>
+
+  <text x="150" y="53" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" fill="#606a80">kit:</text>
+  <text x="188" y="53" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" font-weight="bold" fill="#e2e8f0">demo kit (generated)</text>
+
+  <rect x="368" y="34" width="82" height="28" rx="4" fill="#0a0e14" stroke="#00e5ff" stroke-width="1"/>
+  <text x="409" y="53" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#00e5ff">k Kit</text>
+
+  <rect x="464" y="34" width="84" height="28" rx="4" fill="#0a0e14" stroke="#ff3dc8" stroke-width="1"/>
+  <text x="506" y="53" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#ff3dc8">strict</text>
+
+  <rect x="1264" y="34" width="136" height="28" rx="4" fill="#0a0e14" stroke="#606a80" stroke-width="1"/>
+  <text x="1332" y="53" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#e2e8f0">Open .mod...</text>
+
+  <!-- SCORES LIST & METADATA PANEL (y=88..456) -->
+  <rect x="24" y="88" width="900" height="368" rx="4" fill="#0a0e14" stroke="#00e5ff" stroke-width="1.2"/>
+  <rect x="25" y="89" width="898" height="34" fill="#101828"/>
+  <line x1="24" y1="123" x2="924" y2="123" stroke="#606a80" stroke-width="1"/>
+  <text x="40" y="111" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" font-weight="bold" fill="#00e5ff">SCORES (*.paula.toml)</text>
+  <text x="908" y="111" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">4 files &#183; &#8593;&#8595; select</text>
+
+  <!-- Selected Score Row -->
+  <rect x="34" y="136" width="880" height="44" rx="4" fill="#101828" stroke="#00e5ff" stroke-width="1"/>
+  <text x="48" y="163" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" font-weight="bold" fill="#00e5ff">&#9654; paula/examples/rio-zouk.paula.toml</text>
+  <text x="898" y="163" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#39ff88">90 BPM &#183; A aeolian &#183; 36 bars</text>
+
+  <!-- Unselected Score Rows -->
+  <rect x="34" y="188" width="880" height="40" rx="4" fill="#0a0e14"/>
+  <text x="48" y="213" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">  examples/brazilian-zouk.paula.toml</text>
+  <text x="898" y="213" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">86 BPM &#183; A minor &#183; 32 bars</text>
+
+  <rect x="34" y="234" width="880" height="40" rx="4" fill="#0a0e14"/>
+  <text x="48" y="259" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">  examples/arp_bass.paula.toml</text>
+  <text x="898" y="259" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">125 BPM &#183; C minor &#183; 08 bars</text>
+
+  <rect x="34" y="280" width="880" height="40" rx="4" fill="#0a0e14"/>
+  <text x="48" y="305" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">  my_track.paula.toml</text>
+  <text x="898" y="305" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">92 BPM &#183; D dorian &#183; 16 bars</text>
+
+  <!-- RIGHT PANEL: SCORE INSPECTOR (x=940..1416, y=88..456) -->
+  <rect x="940" y="88" width="476" height="368" rx="4" fill="#0a0e14" stroke="#606a80" stroke-width="1"/>
+  <rect x="941" y="89" width="474" height="34" fill="#101828"/>
+  <line x1="940" y1="123" x2="1416" y2="123" stroke="#606a80" stroke-width="1"/>
+  <text x="956" y="111" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" font-weight="bold" fill="#00e5ff">SCORE SUMMARY</text>
+
+  <text x="956" y="152" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="16" font-weight="bold" fill="#e2e8f0">Rio zouk</text>
+  <text x="956" y="176" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">style: Brazilian Zouk &#183; clave 3-2 &#183; 4/4</text>
+
+  <line x1="956" y1="194" x2="1400" y2="194" stroke="#182234" stroke-width="1"/>
+  <text x="956" y="216" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#00e5ff">PROGRESSION</text>
+  <text x="956" y="238" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#e2e8f0">intro:  Am7 | Fmaj7 | Am7 | Fmaj7</text>
+  <text x="956" y="258" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#e2e8f0">verse:  Am7 | Fmaj7 | Dm7 | Em7</text>
+  <text x="956" y="278" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#e2e8f0">chorus: VImaj7 VII7 | i7</text>
+
+  <line x1="956" y1="296" x2="1400" y2="296" stroke="#182234" stroke-width="1"/>
+  <text x="956" y="318" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#39ff88">CHANNELS &amp; SAMPLES</text>
+  <text x="956" y="340" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#e2e8f0">CH1: 01 kick   (x.....x.x.....x.)</text>
+  <text x="956" y="360" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#e2e8f0">CH2: 02 chick  (....x..o....x.o.)</text>
+  <text x="956" y="380" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#e2e8f0">CH3: 04 bass   (root-fifth C-1..G-2)</text>
+  <text x="956" y="400" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#e2e8f0">CH4: 05 keys   (chord-tones C-2..B-3)</text>
+
+  <!-- LINT DIAGNOSTICS PANEL (y=470..762) -->
+  <rect x="24" y="470" width="1392" height="292" rx="4" fill="#0a0e14" stroke="#ff3dc8" stroke-width="1.2"/>
+  <rect x="25" y="471" width="1390" height="34" fill="#101828"/>
+  <line x1="24" y1="505" x2="1416" y2="505" stroke="#ff3dc8" stroke-width="1"/>
+  <text x="40" y="493" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" font-weight="bold" fill="#ff3dc8">LINT 1/3 &#183; PgUp/PgDn</text>
+  <text x="1400" y="493" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">strict mode active</text>
+
+  <text x="40" y="538" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#ff3dc8">paula/examples/rio-zouk.paula.toml:12:1: warning: swing = 0.1 is stored, not rendered in v0</text>
+  <text x="40" y="568" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#606a80">paula/examples/rio-zouk.paula.toml:30:10: info: role.snare groove uses ghost hits (o)</text>
+  <text x="40" y="598" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#39ff88">kit check: 5/5 required samples present (kick, chick, bass, keys)</text>
+
+  <!-- ACTION & FOOTER BAR (y=776..880) -->
+  <rect x="24" y="776" width="1392" height="104" rx="4" fill="#101828" stroke="#606a80" stroke-width="1"/>
+
+  <rect x="38" y="788" width="110" height="36" rx="4" fill="#0a0e14" stroke="#ff3dc8" stroke-width="1"/>
+  <text x="93" y="811" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" fill="#ff3dc8">l Lint</text>
+
+  <rect x="162" y="788" width="220" height="36" rx="4" fill="#00e5ff"/>
+  <text x="272" y="811" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" font-weight="bold" fill="#000000">Enter Compile &amp; Play</text>
+
+  <rect x="396" y="788" width="190" height="36" rx="4" fill="#0a0e14" stroke="#39ff88" stroke-width="1"/>
+  <text x="491" y="811" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" fill="#39ff88">w Save .mod + .wav</text>
+
+  <rect x="600" y="788" width="110" height="36" rx="4" fill="#0a0e14" stroke="#606a80" stroke-width="1"/>
+  <text x="655" y="811" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" fill="#e2e8f0">k Kit</text>
+
+  <rect x="1290" y="788" width="110" height="36" rx="4" fill="#0a0e14" stroke="#606a80" stroke-width="1"/>
+  <text x="1345" y="811" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" fill="#606a80">q Quit</text>
+
+  <text x="38" y="846" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#606a80">&#8593;&#8595; choose &#183; l lint &#183; PgUp/PgDn scroll lint &#183; Enter compile &amp; play &#183; w save &#183; k kit &#183; q quit</text>
+  <text x="38" y="866" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#ff3dc8">status: 1 warning in strict mode — press l to re-lint or Enter to compile</text>
+</svg>
