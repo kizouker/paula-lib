@@ -54,6 +54,9 @@ pub struct Role {
     pub clave: Option<Spanned<String>>,
     /// most hits (x and o) allowed in one bar before the linter warns
     pub max_density: Option<Spanned<i64>>,
+    /// laid-back feel: every hit (`x`) of this role plays this many ticks late (EDx note delay),
+    /// 0 up to speed - 1; at speed 6 and 90 BPM one tick is about 28 ms. Ghosts are not delayed.
+    pub delay: Option<Spanned<i64>>,
 }
 
 #[derive(Debug, Deserialize)]

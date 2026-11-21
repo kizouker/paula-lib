@@ -1,0 +1,48 @@
+#:schema ../schema/paula.schema.json
+# Brazilian zouk (not Antillean zouk), 86 BPM, A aeolian. Kit slots:
+#   1 kick, 2 side stick (the "chick"), 4 bass, 5 piano chord (one minor chord per bar)
+# The feel is "bom - chick chick - bom": kick and bass on 1 and 3, the chicks on 2, 2& and 4, 4&,
+# played 2 ticks late (about 60 ms) so they drag a little: quick quick slow.
+# With the generated demo kit it plays too, only thinner.
+
+[style]
+name = "Brazilian zouk"
+key = "A aeolian"
+meter = "4/4"
+bpm = 86
+tempo = [80, 96]
+
+# All minor chords, so a minor chord sample in slot 5 is always right.
+[progression]
+intro = "Am | Dm | Em | Am"
+verse = "Am | Dm | Em | Am"
+chorus = "Dm | Am | Em | Am"
+
+# x hit, o ghost (quiet), . rest. 16 steps = one bar.
+[role.kick]
+channel = 1
+sample = 1
+groove = "x.......x......."
+
+[role.chick]
+channel = 2
+sample = 2
+groove = "....x.x.....x.x."
+delay = 2
+
+[role.bass]
+channel = 3
+sample = 4
+register = "C-1..G-2"
+rule = "root"
+groove = "x.......x......."
+
+[role.keys]
+channel = 4
+sample = 5
+register = "C-2..B-2"
+rule = "root"
+groove = "x..............."
+
+[song]
+form = "intro 4, verse 8, chorus 8, verse 8, chorus 8"

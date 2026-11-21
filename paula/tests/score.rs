@@ -240,3 +240,58 @@ fn example_renders_audio_with_kick_onsets_on_the_kick_rows() {
         assert!(expected.iter().any(|t| (g - t).abs() <= 0.010), "unexpected onset at {g:.3} s");
     }
 }
+
+// ---------- laid-back feel: role delay (EDx) ----------
+
+const DELAY_SONG: &str = "[progression]\nv = \"Am | Am | Am | Am\"\n[role.kick]\nchannel = 1\nsample = 1\ngroove = \"x...............\"\n[role.chick]\nchannel = 2\nsample = 2\ngroove = \"....x.o.........\"\ndelay = 2\n[song]\nform = \"v 4\"\n";
+
+#[test]
+fn delay_writes_a_note_delay_on_hits_and_leaves_ghosts_alone() {
+    let m = compile(&format!("{HEAD}{DELAY_SONG}"));
+    let hit = cell(&m, 0, 4, 1);
+    assert_eq!((hit.cmd, hit.param), (0xE, 0xD2), "hit plays 2 ticks late");
+    let ghost = cell(&m, 0, 6, 1);
+    assert_eq!(ghost.cmd, 0xC, "ghost keeps its volume, not delayed");
+    let kick = cell(&m, 0, 0, 0);
+    assert_ne!((kick.cmd, kick.param & 0xF0), (0xE, 0xD0), "roles without delay stay on the grid");
+}
+
+#[test]
+fn delay_must_be_below_speed() {
+    let src = format!("{HEAD}{}", DELAY_SONG.replace("delay = 2", "delay = 6"));
+    let d = compile_source(&src, &demo_kit(), false).unwrap_err();
+    let text = lint::render_text("t", &d);
+    assert!(text.contains("delay") && text.contains("below style.speed"), "{text}");
+}
+
+#[test]
+fn a_delayed_hit_is_heard_two_ticks_later() {
+    // one snare hit on row 0, on the grid and with ED2; nothing else plays
+    let mut on = demo_kit();
+    on.song_len = 1;
+    on.order[0] = 0;
+    on.patterns = vec![[[Cell::default(); NUM_CHANNELS]; 64]];
+    on.patterns[0][0][0] = Cell { period: PERIODS[12], sample: 2, cmd: 0xF, param: 6 };
+    on.patterns[0][1][1] = Cell { period: PERIODS[12], sample: 2, cmd: 0, param: 0 };
+    let mut late = on.clone();
+    late.patterns[0][1][1].cmd = 0xE;
+    late.patterns[0][1][1].param = 0xD2;
+    // channel 1 also has a hit on row 0 as a time reference; find where channel 2 starts by difference
+    let mut e = Engine::new(RATE).unwrap();
+    let render = |e: &mut Engine, m: &Module| {
+        e.load(m).unwrap();
+        e.render_song(m, 1.0).unwrap()
+    };
+    let a = render(&mut e, &on);
+    let b = render(&mut e, &late);
+    let first_diff = a.chunks(2).zip(b.chunks(2)).position(|(x, y)| x != y).expect("the delay changes the sound") as f64;
+    // the on-grid hit starts at row 1: 1 row = 6 ticks at 125 BPM, 2.5/125 s per tick
+    let tick = RATE as f64 * 2.5 / 125.0;
+    assert!((first_diff - 6.0 * tick).abs() < tick * 0.5, "differs from row 1 on ({first_diff} vs {})", 6.0 * tick);
+    // the delayed hit is silent for 2 ticks after the on-grid one starts
+    let quiet = |pcm: &[i16], from: usize, to: usize| pcm[from * 2..to * 2].iter().map(|v| (*v as i64).abs()).max().unwrap();
+    let start = (6.0 * tick) as usize;
+    let early = quiet(&b, start + 50, start + (1.8 * tick) as usize);
+    let heard = quiet(&b, start + (2.2 * tick) as usize, start + (4.0 * tick) as usize);
+    assert!(heard > early * 4 + 10, "late hit sounds after 2 ticks ({early} before, {heard} after)");
+}

@@ -263,6 +263,15 @@ pub fn analyze(src: &str, base: Option<&Module>, opts: &Options) -> Analysis {
                 claves.push((name.clone(), c.get_ref().clone()));
             }
         }
+        let delay = match &r.delay {
+            Some(d) if !(0..speed).contains(d.get_ref()) => {
+                cx.error("bad-delay", d.span().start, format!("role.{name}.delay: {} ticks is outside 0..{} (it must be below style.speed {speed})", d.get_ref(), speed - 1));
+                ok = false;
+                0
+            }
+            Some(d) => *d.get_ref() as u8,
+            None => 0,
+        };
         let kind = match (&r.rule, &r.register) {
             (None, None) => Some(Kind::Drum),
             (None, Some(reg)) => {
@@ -302,7 +311,7 @@ pub fn analyze(src: &str, base: Option<&Module>, opts: &Options) -> Analysis {
         match kind {
             Some(kind) if ok => {
                 groove_at.insert(name.clone(), gat);
-                roles.push(RoleSpec { name: name.clone(), channel: (ch - 1) as usize, sample: sample as u8, kind, rows });
+                roles.push(RoleSpec { name: name.clone(), channel: (ch - 1) as usize, sample: sample as u8, kind, rows, delay });
             }
             _ => {}
         }
