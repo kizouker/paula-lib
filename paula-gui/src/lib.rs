@@ -1,6 +1,12 @@
+pub mod ask;
 pub mod audio;
+pub mod audition;
+pub mod circle;
 pub mod cli;
+pub mod edit;
 pub mod format;
+pub mod groove;
+pub mod meter;
 pub mod palette;
 pub mod player;
 pub mod state;

@@ -44,12 +44,20 @@ impl fmt::Display for SessionError {
 
 impl std::error::Error for SessionError {}
 
-/// What `accept` changed: enough to put the module back exactly.
+/// What `accept` or `set_cell` changed: enough to put the module back exactly.
 #[derive(Clone, Debug)]
-struct Step {
-    patterns_len: usize,
-    song_len: u8,
-    order_slot: u8,
+enum Step {
+    Proposal {
+        patterns_len: usize,
+        song_len: u8,
+        order_slot: u8,
+    },
+    Cell {
+        pattern: usize,
+        row: usize,
+        channel: usize,
+        before: Cell,
+    },
 }
 
 pub struct Session {
@@ -101,7 +109,7 @@ impl Session {
         if idx >= MAX_PATTERNS {
             return Err(SessionError::TooManyPatterns);
         }
-        self.undo.push(Step { patterns_len: idx, song_len: self.module.song_len, order_slot: self.module.order[slot] });
+        self.undo.push(Step::Proposal { patterns_len: idx, song_len: self.module.song_len, order_slot: self.module.order[slot] });
         self.module.patterns.push(p.pattern);
         self.module.order[slot] = idx as u8;
         self.module.song_len += 1;
@@ -109,12 +117,82 @@ impl Session {
         Ok(slot)
     }
 
-    /// Undo the last accepted proposal. False when there is nothing to undo.
+    /// Replace one cell in `module.patterns[pattern][row][channel]` and push an undo step.
+    /// Returns `false` if out of range or if `cell` already equals the current cell.
+    pub fn set_cell(&mut self, pattern: usize, row: usize, channel: usize, cell: Cell) -> bool {
+        if pattern >= self.module.patterns.len() || row >= NUM_ROWS || channel >= NUM_CHANNELS {
+            return false;
+        }
+        let before = self.module.patterns[pattern][row][channel];
+        if before == cell {
+            return false;
+        }
+        self.module.patterns[pattern][row][channel] = cell;
+        self.undo.push(Step::Cell { pattern, row, channel, before });
+        true
+    }
+
+    /// Undo the last accepted proposal or cell edit. False when there is nothing to undo.
     pub fn undo(&mut self) -> bool {
         let Some(s) = self.undo.pop() else { return false };
-        self.module.patterns.truncate(s.patterns_len);
-        self.module.order[s.song_len as usize] = s.order_slot;
-        self.module.song_len = s.song_len;
+        match s {
+            Step::Proposal { patterns_len, song_len, order_slot } => {
+                self.module.patterns.truncate(patterns_len);
+                self.module.order[song_len as usize] = order_slot;
+                self.module.song_len = song_len;
+            }
+            Step::Cell { pattern, row, channel, before } => {
+                if let Some(pat) = self.module.patterns.get_mut(pattern) {
+                    if row < NUM_ROWS && channel < NUM_CHANNELS {
+                        pat[row][channel] = before;
+                    }
+                }
+            }
+        }
         true
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn set_cell_and_undo_restores_previous_cell() {
+        let mut session = Session::new(Module::empty());
+        let note = Cell { period: 428, sample: 1, cmd: 0xE, param: 0xD2 };
+        assert!(!session.can_undo());
+        assert!(session.set_cell(0, 4, 1, note));
+        assert!(session.can_undo());
+        assert_eq!(session.module().patterns[0][4][1], note);
+        assert!(!session.set_cell(0, 4, 1, note));
+        assert!(!session.set_cell(9, 0, 0, note));
+        assert!(session.undo());
+        assert_eq!(session.module().patterns[0][4][1], Cell::default());
+        assert!(!session.can_undo());
+    }
+
+    #[test]
+    fn undo_interleaves_proposals_and_cell_edits() {
+        let mut session = Session::new(Module::empty());
+        let c1 = Cell { period: 428, sample: 1, cmd: 0, param: 0 };
+        assert!(session.set_cell(0, 0, 0, c1));
+
+        let proposal = Proposal::new("zouk kick", vec![Placed { row: 0, ch: 0, cell: c1 }]);
+        session.propose(proposal);
+        assert_eq!(session.accept().unwrap(), 1);
+        assert_eq!(session.module().song_len, 2);
+
+        let c2 = Cell { period: 214, sample: 2, cmd: 0xC, param: 0x20 };
+        assert!(session.set_cell(1, 2, 3, c2));
+        assert_eq!(session.module().patterns[1][2][3], c2);
+
+        assert!(session.undo());
+        assert_eq!(session.module().patterns[1][2][3], Cell::default());
+        assert!(session.undo());
+        assert_eq!(session.module().song_len, 1);
+        assert!(session.undo());
+        assert_eq!(session.module().patterns[0][0][0], Cell::default());
+        assert!(!session.undo());
     }
 }
