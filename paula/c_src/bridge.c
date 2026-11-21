@@ -257,6 +257,18 @@ void paula_play(void)
 }
 
 void paula_stop(void) { modStop(); editor.currMode = MODE_IDLE; paula_clear_visuals(); }
+
+/* Play the song from song position `pos` (0..songLength-1), row 0, like paula_play does for
+** position 0. Used to hear a pattern that was just appended without waiting for the song. */
+int paula_play_from(int pos)
+{
+	if (pos < 0 || pos >= song->header.songLength) return -1;
+	editor.playMode = PLAY_MODE_NORMAL;
+	paula_reset_audio_state();
+	modPlay(-1, (int16_t)pos, 0);
+	editor.currMode = MODE_PLAY;
+	return 0;
+}
 int  paula_is_playing(void) { return editor.songPlaying ? 1 : 0; }
 
 /* Channel mute, as the tracker's own mute keys do it: with editor.muted set, the replayer starts

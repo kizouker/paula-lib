@@ -325,10 +325,12 @@ impl PlayerState {
                 self.audition_mode = AuditionMode::None;
                 self.status = match self.reload_engine() {
                     Ok(()) => {
+                        // play the accepted pattern from its own position, not from the song start
                         if was_auditioning && self.audio_available {
                             if let Some(engine) = self.engine.as_ref() {
-                                engine.lock().unwrap().play();
+                                let _ = engine.lock().unwrap().play_from(pos);
                             }
+                            self.follow = true;
                         }
                         format!("accepted as song position {pos:02}; u undoes it")
                     }

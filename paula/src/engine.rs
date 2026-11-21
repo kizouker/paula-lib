@@ -28,6 +28,7 @@ mod ffi {
         pub fn paula_get_bpm() -> i32;
         pub fn paula_get_speed() -> i32;
         pub fn paula_play();
+        pub fn paula_play_from(pos: i32) -> i32;
         pub fn paula_stop();
         pub fn paula_is_playing() -> i32;
         pub fn paula_set_muted(ch: i32, on: i32);
@@ -201,6 +202,16 @@ impl Engine {
     pub fn play(&mut self) {
         unsafe { ffi::paula_play() };
         self.ev = EventState::started();
+    }
+
+    /// Play from song position `pos`, row 0. `OutOfRange` when `pos` is past the song length.
+    pub fn play_from(&mut self, pos: usize) -> Result<(), Error> {
+        let r = unsafe { ffi::paula_play_from(pos.min(i32::MAX as usize) as i32) };
+        if r != 0 {
+            return Err(Error::OutOfRange(format!("song position {pos} is past the song length")));
+        }
+        self.ev = EventState::started();
+        Ok(())
     }
 
     pub fn stop(&mut self) {
