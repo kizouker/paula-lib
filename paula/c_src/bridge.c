@@ -29,6 +29,7 @@ static void paula_pause(SDL_AudioDeviceID id, int p) { (void)id; (void)p; }
 #undef SDL_CloseAudioDevice
 
 #include "../../src/pt2_replayer.h"
+#include "../../src/pt2_paula.h"
 #include "../../src/pt2_config.h"
 #include "../../src/pt2_hpc.h"
 
@@ -257,6 +258,17 @@ void paula_play(void)
 
 void paula_stop(void) { modStop(); editor.currMode = MODE_IDLE; paula_clear_visuals(); }
 int  paula_is_playing(void) { return editor.songPlaying ? 1 : 0; }
+
+/* Channel mute, as the tracker's own mute keys do it: with editor.muted set, the replayer starts
+** no new DMA and skips volume updates for that channel. Muting also stops the channel's DMA, so
+** a note already sounding goes quiet at once; unmuting takes effect at the channel's next note. */
+void paula_set_muted(int ch, int on)
+{
+	if (ch < 0 || ch >= PAULA_CHANNELS) return;
+	editor.muted[ch] = on ? true : false;
+	if (on) paulaWriteWord(0xDFF096, (uint16_t)(1 << ch)); /* DMACON: clear bit ch */
+}
+int paula_is_muted(int ch) { return (ch >= 0 && ch < PAULA_CHANNELS && editor.muted[ch]) ? 1 : 0; }
 int  paula_get_pos(void) { return song->currPos; }
 int  paula_get_row(void) { return song->currRow; }
 

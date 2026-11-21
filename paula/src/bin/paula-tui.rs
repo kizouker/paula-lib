@@ -4,7 +4,7 @@
 //!   paula-tui --score song.paula.toml --base kit.mod [--strict]   compile a score onto the samples of kit.mod and load it
 //!   paula-tui [--menu [dir]] [--base kit.mod] [--strict]   menu of *.paula.toml scores (examples/ and the current folder, or dir)
 //! Menu keys: ↑/↓ choose · l lint · PgUp/PgDn scroll the lint panel · enter compile and play · w save .mod + .wav next to the score · k choose the base kit · q quit
-//! Keys: space play/stop · ↑/↓ row · PgUp/PgDn 16 rows · ←/→ song position · f follow · s tracker/spectrum/both · d diesel · q quit
+//! Keys: space play/stop · 1-4 mute/unmute a channel · ↑/↓ row · PgUp/PgDn 16 rows · ←/→ song position · f follow · s tracker/spectrum/both · d diesel · q quit
 //!   p ask the model for a pattern (type the request, Enter sends, Esc cancels) · a accept the proposal · r reject it · u undo the last accept
 //! The model call runs on its own thread, so playback and the screen never wait for it. Needs MODEL_API_KEY (Meta Muse) or ANTHROPIC_API_KEY (environment or .env).
 
@@ -363,6 +363,11 @@ fn event_loop(terminal: &mut DefaultTerminal, app: &mut App) -> Result<(), Strin
                 app.follow = !app.follow;
                 app.status = format!("follow {}", if app.follow { "on" } else { "off" });
             }
+            KeyCode::Char(c @ '1'..='4') => {
+                let ch = c as usize - '1' as usize;
+                let muted = app.engine.lock().unwrap().toggle_mute(ch);
+                app.status = format!("channel {} {}", ch + 1, if muted { "muted" } else { "on" });
+            }
             KeyCode::Up => step(app, -1),
             KeyCode::Down => step(app, 1),
             KeyCode::PageUp => step(app, -16),
@@ -518,6 +523,11 @@ fn step(app: &mut App, d: i32) {
     app.cursor = (app.cursor as i32 + d).clamp(0, NUM_ROWS as i32 - 1) as usize;
 }
 
+/// `1234` with a muted channel shown as `-`, e.g. `1-34`.
+fn mute_marks(muted: &[bool; 4]) -> String {
+    muted.iter().enumerate().map(|(i, &m)| if m { '-' } else { char::from(b'1' + i as u8) }).collect()
+}
+
 fn cell_spans(c: &Cell) -> Vec<Span<'static>> {
     let note = note_name(c.period);
     let smp = if c.sample == 0 { "..".to_string() } else { format!("{:02X}", c.sample) };
@@ -546,7 +556,7 @@ fn draw(f: &mut Frame, app: &App, playing: bool, pos: u8, row: u8) {
     let header = Line::from(vec![
         state,
         Span::styled(format!("  {}  ", m.title()), Style::default().fg(CYAN).add_modifier(Modifier::BOLD)),
-        Span::raw(format!("pos {:02}/{:02}  pattern {:02}  row {:02}  bpm {bpm}  speed {speed}  follow {}", app.view_pos, m.song_len, pat, app.cursor, if app.follow { "on" } else { "off" })),
+        Span::raw(format!("pos {:02}/{:02}  pattern {:02}  row {:02}  bpm {bpm}  speed {speed}  follow {}  mute {}", app.view_pos, m.song_len, pat, app.cursor, if app.follow { "on" } else { "off" }, mute_marks(&app.engine.lock().unwrap().muted()))),
     ]);
     f.render_widget(Paragraph::new(header).block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(DIM)).title(" paula ")), head);
 
@@ -622,7 +632,7 @@ fn draw_diesel(f: &mut Frame, app: &App, body: Rect) {
 }
 
 fn draw_footer(f: &mut Frame, app: &App, foot: Rect) {
-    let keys = "space play/stop · ↑↓ row · PgUp/PgDn 16 rows · ←→ position · f follow · s view · d diesel · p ask model · a accept · r reject · u undo · q quit";
+    let keys = "space play/stop · 1-4 mute · ↑↓ row · PgUp/PgDn 16 rows · ←→ position · f follow · s view · d diesel · p ask model · a accept · r reject · u undo · q quit";
     let first = match &app.input {
         Some(t) => Line::from(vec![Span::styled("ask> ", Style::default().fg(PINK)), Span::raw(t.as_str()), Span::styled("▏", Style::default().fg(CYAN)), Span::styled("   Enter send · Esc cancel", Style::default().fg(DIM))]),
         None => Line::from(Span::styled(keys, Style::default().fg(DIM))),

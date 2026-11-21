@@ -29,6 +29,8 @@ pub enum Action {
     TogglePlay,
     Stop,
     ToggleFollow,
+    /// mute or unmute channel 0..4
+    ToggleMute(usize),
     CycleView,
     SetView(ViewMode),
     Row(i32),
@@ -275,6 +277,7 @@ impl AppState {
             }
             Action::Stop => if let Some(player) = self.player.as_mut() { player.stop(); self.status = player.status.clone(); }
             Action::ToggleFollow => if let Some(player) = self.player.as_mut() { player.toggle_follow(); }
+            Action::ToggleMute(ch) => if let Some(player) = self.player.as_mut() { player.toggle_mute(ch); }
             Action::CycleView => if let Some(player) = self.player.as_mut() { player.cycle_view(); self.status = player.status.clone(); }
             Action::SetView(view) => if let Some(player) = self.player.as_mut() {
                 player.view = view;
