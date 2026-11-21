@@ -64,6 +64,7 @@
           },
           "clave": { "type": "string", "enum": ["3-2", "2-3"], "description": "Clave direction; paula-lint warns when roles differ." },
           "max_density": { "type": "integer", "minimum": 1, "maximum": 16, "description": "Most hits (x and o) per bar before paula-lint warns." },
+          "duck": { "type": "string", "description": "Sidechain-style ducking: the name of another role (usually the kick). On every hit of that role this role's volume drops to half and slides back up over the next two rows." },
           "delay": { "type": "integer", "minimum": 0, "maximum": 30, "description": "Laid-back feel: every hit (x) plays this many ticks late (EDx note delay), below style.speed. At speed 6 and 90 BPM one tick is about 28 ms. Ghost notes are not delayed." }
         }
       }

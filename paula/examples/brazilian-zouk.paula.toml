@@ -3,6 +3,7 @@
 #   1 kick, 2 side stick (the "chick"), 4 bass, 5 piano chord (one minor chord per bar)
 # The feel is "bom - chick chick - bom": kick and bass on 1 and 3, the chicks on 2, 2& and 4, 4&,
 # played 2 ticks late (about 60 ms) so they drag a little: quick quick slow.
+# The pad ducks under the kick (duck = "kick"), like a sidechain compressor.
 # With the generated demo kit it plays too, only thinner.
 
 [style]
@@ -43,6 +44,7 @@ sample = 5
 register = "C-2..B-2"
 rule = "root"
 groove = "x..............."
+duck = "kick"   # the pad dips on every kick and swells back (sidechain feel)
 
 [song]
 form = "intro 4, verse 8, chorus 8, verse 8, chorus 8"

@@ -67,6 +67,8 @@ pub struct RoleSpec {
     pub rows: Vec<Row>,
     /// ticks each hit plays late (EDx), 0 = on the grid
     pub delay: u8,
+    /// index into `Score::roles` of the role whose hits duck this one
+    pub duck: Option<usize>,
 }
 
 #[derive(Clone, Debug)]

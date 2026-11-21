@@ -311,9 +311,22 @@ pub fn analyze(src: &str, base: Option<&Module>, opts: &Options) -> Analysis {
         match kind {
             Some(kind) if ok => {
                 groove_at.insert(name.clone(), gat);
-                roles.push(RoleSpec { name: name.clone(), channel: (ch - 1) as usize, sample: sample as u8, kind, rows, delay });
+                roles.push(RoleSpec { name: name.clone(), channel: (ch - 1) as usize, sample: sample as u8, kind, rows, delay, duck: None });
             }
             _ => {}
+        }
+    }
+    // duck = "<role>": resolve the trigger role now that every role is known
+    for (name, spanned) in &file.role {
+        let Some(d) = &spanned.get_ref().duck else { continue };
+        let target = d.get_ref().as_str();
+        let at = d.span().start;
+        let Some(me) = roles.iter().position(|r| &r.name == name) else { continue };
+        match roles.iter().position(|r| r.name == target) {
+            None => cx.error("bad-duck", at, format!("role.{name}.duck: no role named {target:?}")),
+            Some(t) if t == me => cx.error("bad-duck", at, format!("role.{name}.duck: a role cannot duck itself")),
+            Some(t) if roles[t].channel == roles[me].channel => cx.error("bad-duck", at, format!("role.{name}.duck: {target} plays on the same channel")),
+            Some(t) => roles[me].duck = Some(t),
         }
     }
     if let Some((first, c0)) = claves.first() {
