@@ -165,6 +165,15 @@ const FOOTER_H: f32 = 64.0;
 /// Height of the spectrum block in the Both view (title, channel labels, 120 px bars, spacing).
 const SPECTRUM_H: f32 = 190.0;
 
+/// Characters in one tracker row: "00 │ " plus four "C-2 01 ..." cells and three " │ ".
+const ROW_CHARS: f32 = 5.0 + 4.0 * 10.0 + 3.0 * 3.0;
+
+/// Font size so one tracker row fills `width` (monospace advance about 0.6 of the size),
+/// between 11 and 36 px: the four channels grow with the window, up to fullscreen.
+pub fn tracker_font_size(width: f32) -> f32 {
+    (width / (ROW_CHARS * 0.6)).clamp(11.0, 36.0)
+}
+
 /// Tracker height that leaves room for the footer, and for the spectrum in the Both view.
 pub fn tracker_height(available: f32, both: bool) -> f32 {
     let reserved = FOOTER_H + if both { SPECTRUM_H } else { 0.0 };
@@ -176,6 +185,7 @@ pub fn tracker_height(available: f32, both: bool) -> f32 {
 fn draw_tracker(ui: &mut Ui, player: &crate::player::PlayerState, scroll_to: Option<usize>, both: bool) {
     let playing_row = if player.session.proposal().is_none() { player.playing_row() } else { None };
     let height = tracker_height(ui.available_height(), both);
+    let font = tracker_font_size(ui.available_width());
     ScrollArea::vertical().auto_shrink([false, false]).max_height(height).show(ui, |ui| {
         let proposal = player.session.proposal();
         let pattern = if proposal.is_none() {
@@ -193,18 +203,18 @@ fn draw_tracker(ui: &mut Ui, player: &crate::player::PlayerState, scroll_to: Opt
         for row in 0..64 {
             let beat = row % 4 == 0;
             let mut job = egui::text::LayoutJob::default();
-            job.append(&format!("{row:02} │ "), 0.0, egui::TextFormat { font_id: egui::FontId::monospace(13.0), color: if beat { cyan() } else { dim() }, ..Default::default() });
+            job.append(&format!("{row:02} │ "), 0.0, egui::TextFormat { font_id: egui::FontId::monospace(font), color: if beat { cyan() } else { dim() }, ..Default::default() });
             let cells = shown.map_or(&[][..], |p| p[row].as_slice());
             for (channel, cell) in cells.iter().enumerate() {
                 if channel > 0 {
                     job.append(" │ ", 0.0, egui::TextFormat::simple(
-                        egui::FontId::monospace(13.0),
+                        egui::FontId::monospace(font),
                         dim(),
                     ));
                 }
                 let formatted = crate::format::format_cell(cell);
                 let note = if formatted.starts_with("---") { dim() } else { cyan() };
-                job.append(&formatted, 0.0, egui::TextFormat { font_id: egui::FontId::monospace(13.0), color: note, ..Default::default() });
+                job.append(&formatted, 0.0, egui::TextFormat { font_id: egui::FontId::monospace(font), color: note, ..Default::default() });
             }
             let fill = if playing_row == Some(row) {
                 super::rgb(PLAYING_BG)
@@ -233,5 +243,15 @@ mod tests {
         assert_eq!(tracker_height(800.0, false), 800.0 - 64.0);
         assert_eq!(tracker_height(800.0, true), 800.0 - 64.0 - 190.0);
         assert_eq!(tracker_height(100.0, true), 80.0, "never below a few rows");
+    }
+
+    #[test]
+    fn tracker_font_grows_with_the_window() {
+        use super::tracker_font_size;
+        assert_eq!(tracker_font_size(300.0), 11.0, "small window: smallest readable size");
+        assert!(tracker_font_size(1440.0) > tracker_font_size(1000.0));
+        assert_eq!(tracker_font_size(4000.0), 36.0, "capped on huge screens");
+        let w = 1000.0;
+        assert!((tracker_font_size(w) * 0.6 * 54.0 - w).abs() < 1.0, "a row fills the width");
     }
 }
