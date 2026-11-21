@@ -128,10 +128,10 @@ pub fn draw(
     };
     if let Some(player) = app.player.as_ref() {
         match player.view {
-            ViewMode::Tracker => draw_tracker(ui, player, scroll_to),
+            ViewMode::Tracker => draw_tracker(ui, player, scroll_to, false),
             ViewMode::Spectrum => super::spectrum::draw(ui, &player.spectra),
             ViewMode::Both => {
-                draw_tracker(ui, player, scroll_to);
+                draw_tracker(ui, player, scroll_to, true);
                 ui.separator();
                 super::spectrum::draw(ui, &player.spectra);
             }
@@ -151,12 +151,23 @@ pub fn draw(
 /// Row backgrounds, as in paula-tui.
 const PLAYING_BG: (u8, u8, u8) = (0x20, 0x10, 0x30);
 const CURSOR_BG: (u8, u8, u8) = (0x10, 0x18, 0x28);
+/// Height kept free under the tracker: the key hints and the status line.
+const FOOTER_H: f32 = 64.0;
+/// Height of the spectrum block in the Both view (title, channel labels, 120 px bars, spacing).
+const SPECTRUM_H: f32 = 190.0;
+
+/// Tracker height that leaves room for the footer, and for the spectrum in the Both view.
+pub fn tracker_height(available: f32, both: bool) -> f32 {
+    let reserved = FOOTER_H + if both { SPECTRUM_H } else { 0.0 };
+    (available - reserved).max(80.0)
+}
 
 /// The 64 rows of the shown pattern. The playing row and the cursor row are highlighted;
 /// `scroll_to` (set once per cursor change) brings that row to the middle of the view.
-fn draw_tracker(ui: &mut Ui, player: &crate::player::PlayerState, scroll_to: Option<usize>) {
+fn draw_tracker(ui: &mut Ui, player: &crate::player::PlayerState, scroll_to: Option<usize>, both: bool) {
     let playing_row = if player.session.proposal().is_none() { player.playing_row() } else { None };
-    ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
+    let height = tracker_height(ui.available_height(), both);
+    ScrollArea::vertical().auto_shrink([false, false]).max_height(height).show(ui, |ui| {
         let proposal = player.session.proposal();
         let pattern = if proposal.is_none() {
             player.module().order[player.view_pos as usize % player.module().song_len as usize] as usize
@@ -202,4 +213,16 @@ fn draw_tracker(ui: &mut Ui, player: &crate::player::PlayerState, scroll_to: Opt
             }
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::tracker_height;
+
+    #[test]
+    fn both_view_leaves_room_for_the_spectrum_and_the_footer() {
+        assert_eq!(tracker_height(800.0, false), 800.0 - 64.0);
+        assert_eq!(tracker_height(800.0, true), 800.0 - 64.0 - 190.0);
+        assert_eq!(tracker_height(100.0, true), 80.0, "never below a few rows");
+    }
 }
