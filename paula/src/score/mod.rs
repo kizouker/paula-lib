@@ -65,6 +65,8 @@ pub struct RoleSpec {
     pub sample: u8,
     pub kind: Kind,
     pub rows: Vec<Row>,
+    /// ticks each hit plays late (EDx), 0 = on the grid
+    pub delay: u8,
 }
 
 #[derive(Clone, Debug)]

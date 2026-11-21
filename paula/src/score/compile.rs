@@ -106,6 +106,10 @@ pub fn compile(score: &Score, base: &Module) -> Result<Module, String> {
                         if pl.ghost {
                             cell.cmd = 0xC;
                             cell.param = GHOST_VOLUME;
+                        } else if role.delay > 0 {
+                            // EDx: note delay, the hit starts x ticks into the row
+                            cell.cmd = 0xE;
+                            cell.param = 0xD0 | role.delay;
                         }
                         pattern[b * 16 + pl.step][role.channel] = cell;
                     }
