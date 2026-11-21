@@ -93,3 +93,16 @@ fn rickards_kit_compiles_rio_zouk_and_is_louder_than_the_chip_bass() {
     let back = paula::Module::parse(&module.to_bytes()).unwrap();
     assert_eq!(back.samples[0].data.len(), kit.samples[0].data.len());
 }
+
+#[test]
+fn demo_keys_are_a_decaying_tone_not_a_beeping_loop() {
+    let kit = demo_kit();
+    let keys = &kit.samples[4];
+    assert!(keys.loop_len <= 2, "one shot");
+    assert!(keys.data.len() > 8000, "about 1.2 s, not a 32-byte cycle");
+    let peak = |r: std::ops::Range<usize>| keys.data[r].iter().map(|&v| (v as i32).abs()).max().unwrap();
+    assert!(peak(0..800) > 3 * peak(keys.data.len() - 800..keys.data.len()), "it fades out");
+    // tuned like the bass: 64 samples per period
+    let bass_period = kit.samples[3].data.len();
+    assert_eq!(bass_period, 64);
+}

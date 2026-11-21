@@ -1,7 +1,7 @@
 //! A small generated sample kit for trying scores without any downloaded files.
 //!
-//! Sample 1 kick, 2 snare, 3 hi-hat, 4 bass (looped, A-1 is about 110 Hz), 5 keys (looped, one cycle
-//! of 32 bytes: A-2 is about 440 Hz). `cargo run --example make-kit -- kit.mod` writes it as a MOD.
+//! Sample 1 kick, 2 snare, 3 hi-hat, 4 bass (looped, A-1 is about 110 Hz), 5 keys (a 1.2 s
+//! decaying electric-piano tone, tuned like the bass: C-2 is about C3 on both). `cargo run --example make-kit -- kit.mod` writes it as a MOD.
 
 use crate::modfile::Module;
 
@@ -60,13 +60,24 @@ pub fn demo_kit() -> Module {
         .collect();
     put(&mut m, 4, "bass", bass, 60, true);
 
-    let keys = (0..32usize)
+    // Keys: a soft decaying electric-piano tone (not a looped chip cycle, which beeps). One shot,
+    // 1.2 s; the fundamental is 8287/64 Hz, the same tuning as the bass, so C-2 is about C3 on
+    // both and the two stay in harmony.
+    let f0 = sr / 64.0;
+    let keys_len = (sr * 1.2) as usize;
+    let keys = (0..keys_len)
         .map(|i| {
-            let x = 2.0 * std::f64::consts::PI * i as f64 / 32.0;
-            ((x.sin() + 0.5 * (3.0 * x).sin() + 0.25 * (5.0 * x).sin()) / 1.75 * 90.0) as i8
+            let t = i as f64 / sr;
+            let w = 2.0 * std::f64::consts::PI * f0 * t;
+            let attack = (t / 0.004).min(1.0);
+            let tone = w.sin() * (-2.5 * t).exp()
+                + 0.45 * (2.0 * w).sin() * (-4.0 * t).exp()
+                + 0.18 * (3.0 * w).sin() * (-6.0 * t).exp()
+                + 0.07 * (4.0 * w).sin() * (-9.0 * t).exp();
+            (tone / 1.7 * attack * 120.0) as i8
         })
         .collect();
-    put(&mut m, 5, "keys", keys, 40, true);
+    put(&mut m, 5, "keys", keys, 40, false);
     m
 }
 
