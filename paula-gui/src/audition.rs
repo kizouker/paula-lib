@@ -1,5 +1,7 @@
-use paula::modfile::{Module, ORDER_LEN};
+use crate::circle::{hit_to_key, CircleHit, Ring};
+use paula::modfile::{period_of, Cell, Module, NUM_CHANNELS, NUM_ROWS, ORDER_LEN};
 use paula::session::{Proposal, Session, SessionError};
+use paula::theory::{Chord, Quality};
 
 /// Build a temporary 1-pattern looping Module from `proposal` and the samples/title of `base`.
 /// `Session::module()` is never mutated.
@@ -14,6 +16,51 @@ pub fn build_audition_module(base: &Module, proposal: &Proposal) -> Module {
         order,
         magic: base.magic,
         patterns: vec![proposal.pattern],
+        trailing: Vec::new(),
+    }
+}
+
+/// Build a temporary 1-pattern Module that plays the triad for a clicked Circle of Fifths sector.
+/// `Session::module()` is never mutated.
+pub fn build_chord_audition_module(base: &Module, hit: CircleHit) -> Module {
+    let key = hit_to_key(hit);
+    let quality = match hit.ring {
+        Ring::Major => Quality::Major,
+        Ring::Minor => Quality::Minor,
+    };
+    let chord = Chord::triad(key.tonic, quality);
+    let tones = chord.tones();
+
+    // Pick a pitched/pad sample if available (prefer sample 4/3, else first non-empty sample).
+    let sample_idx = [3usize, 2, 1, 0]
+        .into_iter()
+        .chain(4..base.samples.len())
+        .find(|&i| base.samples.get(i).is_some_and(|s| !s.data.is_empty()))
+        .map(|i| (i + 1) as u8)
+        .unwrap_or(1);
+
+    let mut pattern = [[Cell::default(); NUM_CHANNELS]; NUM_ROWS];
+    for (ch, pc) in tones.iter().take(NUM_CHANNELS).enumerate() {
+        let note_name = format!("{}-2", pc.name());
+        let period = period_of(&note_name).unwrap_or(428);
+        pattern[0][ch] = Cell {
+            period,
+            sample: sample_idx,
+            cmd: 0xC,
+            param: 0x38,
+        };
+    }
+
+    let mut order = [0u8; ORDER_LEN];
+    order[0] = 0;
+    Module {
+        name: base.name,
+        samples: base.samples.clone(),
+        song_len: 1,
+        restart: base.restart,
+        order,
+        magic: base.magic,
+        patterns: vec![pattern],
         trailing: Vec::new(),
     }
 }

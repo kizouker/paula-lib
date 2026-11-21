@@ -1,12 +1,21 @@
+use crate::audition;
 use crate::audio::AudioBackend;
-use paula::modfile::NUM_ROWS;
-use paula::{Engine, LoadReport, Module, Spectra};
-use std::sync::{Arc, Mutex};
-use paula::session::Session;
+use crate::circle::{self, CircleHit, CircleState, Ring};
+use crate::edit::{self, EditCursor};
+use crate::meter::MasterMeter;
+use paula::llm::score::ScoreProposal;
 use paula::llm::{Model, Tempo};
+use paula::modfile::{NUM_CHANNELS, NUM_ROWS};
+use paula::score::Score;
+use paula::session::Session;
+use paula::theory::Key;
+use paula::{Engine, LoadReport, Module, Spectra};
+use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ViewMode {
+    Studio,
     Tracker,
     Spectrum,
     Both,
@@ -15,11 +24,20 @@ pub enum ViewMode {
 impl ViewMode {
     pub fn cycle(self) -> Self {
         match self {
+            Self::Studio => Self::Tracker,
             Self::Tracker => Self::Spectrum,
             Self::Spectrum => Self::Both,
-            Self::Both => Self::Tracker,
+            Self::Both => Self::Studio,
         }
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AuditionMode {
+    None,
+    PatternProposal,
+    ScoreProposal,
+    Chord,
 }
 
 pub struct PlayerState {
@@ -32,6 +50,22 @@ pub struct PlayerState {
     pub view: ViewMode,
     pub status: String,
     pub spectra: Spectra,
+    pub master_meter: MasterMeter,
+    pub circle: CircleState,
+    pub diatonic_chords: Vec<(usize, Ring, String)>,
+    pub selected_chord_label: Option<String>,
+    pub score: Option<Score>,
+    pub score_toml: Option<String>,
+    pub kit: Option<Module>,
+    pub source_path: Option<PathBuf>,
+    pub pending_save_overwrite: Option<PathBuf>,
+    pub pad_ducking_backup: Option<(usize, usize)>,
+    pub pending_score_proposal: Option<(ScoreProposal, Vec<String>)>,
+    pub prev_score_snapshot: Option<(Module, Option<String>, Option<Score>)>,
+    pub audition_mode: AuditionMode,
+    pub edit_mode: bool,
+    pub edit_cursor: EditCursor,
+    pub edit_octave: u8,
     pub engine: Option<Arc<Mutex<Engine>>>,
     pub audio_available: bool,
     pub audio_error: Option<String>,
@@ -60,19 +94,85 @@ impl PlayerState {
         };
         let label = label;
         let session = Session::new(module.clone());
+        let default_key = Key::parse("A aeolian").unwrap();
+        let circle = CircleState {
+            active_sector: 0,
+            active_ring: Ring::Minor,
+            mode_label: "aeolian".to_string(),
+            song_chords: Vec::new(),
+        };
+        let diatonic_chords = circle::diatonic_chords(default_key);
         Ok(Self {
-            session, label, rate, view_pos: 0, cursor: 0, follow: true, view: ViewMode::Tracker,
-            status, spectra: Spectra::default(), engine, audio_available,
-            audio_error: None, ask_open: false, ask_input: String::new(),
-            llm_in_flight: false, llm_progress: None, scrolled_to: None,
+            session,
+            label,
+            rate,
+            view_pos: 0,
+            cursor: 0,
+            follow: true,
+            view: ViewMode::Studio,
+            status,
+            spectra: Spectra::default(),
+            master_meter: MasterMeter::default(),
+            circle,
+            diatonic_chords,
+            selected_chord_label: None,
+            score: None,
+            score_toml: None,
+            kit: None,
+            source_path: None,
+            pending_save_overwrite: None,
+            pad_ducking_backup: None,
+            pending_score_proposal: None,
+            prev_score_snapshot: None,
+            audition_mode: AuditionMode::None,
+            edit_mode: false,
+            edit_cursor: EditCursor::default(),
+            edit_octave: 2,
+            engine,
+            audio_available,
+            audio_error: None,
+            ask_open: false,
+            ask_input: String::new(),
+            llm_in_flight: false,
+            llm_progress: None,
+            scrolled_to: None,
         })
+    }
+
+    pub fn set_score_context(
+        &mut self,
+        score_toml: Option<String>,
+        score: Option<Score>,
+        kit: Option<Module>,
+        source_path: Option<PathBuf>,
+    ) {
+        self.score_toml = score_toml;
+        if let Some(ref s) = score {
+            self.circle = circle::from_score(s);
+            self.diatonic_chords = circle::diatonic_chords(s.key);
+        }
+        self.score = score;
+        if let Some(k) = kit {
+            self.kit = Some(k);
+        }
+        if let Some(p) = source_path {
+            self.source_path = Some(p);
+        }
+        self.pad_ducking_backup = None;
+    }
+
+    pub fn current_pattern_index(&self) -> usize {
+        let len = (self.module().song_len as usize).max(1);
+        self.module().order[self.view_pos as usize % len] as usize
     }
 
     pub fn module(&self) -> &Module { self.session.module() }
 
     pub fn load_path(&mut self, path: &std::path::Path) -> Result<(), String> {
         let module = paula::read_module(path).map_err(|e| e.to_string())?;
-        self.load_module(module, path.display().to_string())
+        self.load_module(module, path.display().to_string())?;
+        self.source_path = Some(path.to_path_buf());
+        Ok(())
     }
 
     pub fn load_module(&mut self, module: Module, label: String) -> Result<(), String> {
@@ -92,6 +192,12 @@ impl PlayerState {
         self.cursor = 0;
         self.follow = true;
         self.scrolled_to = None;
+        self.audition_mode = AuditionMode::None;
+        self.pending_score_proposal = None;
+        self.prev_score_snapshot = None;
+        self.pending_save_overwrite = None;
+        self.edit_mode = false;
+        self.edit_cursor = EditCursor::default();
         Ok(())
     }
 
@@ -120,14 +226,14 @@ impl PlayerState {
     pub fn open_ask(&mut self) {
         if self.llm_in_flight {
             self.status = "still waiting for the model".to_string();
-        } else if self.session.proposal().is_some() {
+        } else if self.session.proposal().is_some() || self.pending_score_proposal.is_some() {
             self.status = "a proposal is waiting: a accepts it, r rejects it; then p asks again".to_string();
         } else if paula::llm::key::load_config().is_err() {
             self.status = format!("{}; everything else works", paula::llm::ModelError::NoKey);
         } else {
             self.ask_open = true;
             self.ask_input.clear();
-            self.status = "type a pattern request and press Enter".to_string();
+            self.status = "type a pattern or song request and press Enter".to_string();
         }
     }
 
@@ -174,13 +280,58 @@ impl PlayerState {
     }
 
     pub fn accept_proposal(&mut self) {
-        match self.session.accept() {
+        let was_auditioning = self.audition_mode != AuditionMode::None || self.is_playing();
+        if let Some((score_prop, _diff)) = self.pending_score_proposal.take() {
+            self.prev_score_snapshot = Some((
+                self.module().clone(),
+                self.score_toml.clone(),
+                self.score.clone(),
+            ));
+            let parsed_score = paula::score::lint::analyze(
+                &score_prop.text,
+                self.kit.as_ref(),
+                &paula::score::lint::Options { strict: false },
+            )
+            .score;
+            self.score_toml = Some(score_prop.text);
+            if let Some(ref s) = parsed_score {
+                self.circle = circle::from_score(s);
+                self.diatonic_chords = circle::diatonic_chords(s.key);
+            }
+            self.score = parsed_score;
+            self.session = Session::new(score_prop.module);
+            self.view_pos = 0;
+            self.cursor = 0;
+            self.follow = true;
+            self.audition_mode = AuditionMode::None;
+            self.status = match self.reload_engine() {
+                Ok(()) => {
+                    if was_auditioning && self.audio_available {
+                        if let Some(engine) = self.engine.as_ref() {
+                            engine.lock().unwrap().play();
+                        }
+                    }
+                    "accepted score proposal; u undoes it".to_string()
+                }
+                Err(error) => format!("accepted score, but the engine did not load it: {error}"),
+            };
+            return;
+        }
+        match audition::accept_and_target_pos(&mut self.session) {
             Ok(pos) => {
                 self.view_pos = pos as u8;
                 self.cursor = 0;
                 self.follow = false;
+                self.audition_mode = AuditionMode::None;
                 self.status = match self.reload_engine() {
-                    Ok(()) => format!("accepted as song position {pos:02}; u undoes it"),
+                    Ok(()) => {
+                        if was_auditioning && self.audio_available {
+                            if let Some(engine) = self.engine.as_ref() {
+                                engine.lock().unwrap().play();
+                            }
+                        }
+                        format!("accepted as song position {pos:02}; u undoes it")
+                    }
                     Err(error) => format!("accepted, but the engine did not load it: {error}"),
                 };
             }
@@ -189,8 +340,13 @@ impl PlayerState {
     }
 
     pub fn reject_proposal(&mut self) {
-        if self.session.proposal().is_some() {
+        if self.session.proposal().is_some() || self.pending_score_proposal.is_some() {
             self.session.reject();
+            self.pending_score_proposal = None;
+            if self.audition_mode != AuditionMode::None {
+                self.audition_mode = AuditionMode::None;
+                let _ = self.reload_engine();
+            }
             self.status = "proposal rejected; the song is unchanged".to_string();
         } else {
             self.status = "no proposal to reject".to_string();
@@ -198,10 +354,32 @@ impl PlayerState {
     }
 
     pub fn undo_proposal(&mut self) {
+        let was_playing = self.is_playing();
         if self.session.undo() {
             self.view_pos = self.view_pos.min(self.module().song_len.saturating_sub(1));
             self.status = match self.reload_engine() {
-                Ok(()) => "undone".to_string(),
+                Ok(()) => {
+                    if was_playing && self.audio_available {
+                        if let Some(engine) = self.engine.as_ref() {
+                            engine.lock().unwrap().play();
+                        }
+                    }
+                    "undone".to_string()
+                }
+                Err(error) => format!("undone, but the engine did not load it: {error}"),
+            };
+        } else if let Some((prev_mod, prev_toml, prev_score)) = self.prev_score_snapshot.take() {
+            self.score_toml = prev_toml;
+            if let Some(ref s) = prev_score {
+                self.circle = circle::from_score(s);
+                self.diatonic_chords = circle::diatonic_chords(s.key);
+            }
+            self.score = prev_score;
+            self.session = Session::new(prev_mod);
+            self.view_pos = 0;
+            self.cursor = 0;
+            self.status = match self.reload_engine() {
+                Ok(()) => "undone score proposal".to_string(),
                 Err(error) => format!("undone, but the engine did not load it: {error}"),
             };
         } else {
@@ -212,6 +390,14 @@ impl PlayerState {
     fn reload_engine(&mut self) -> Result<(), String> {
         if let Some(engine) = self.engine.as_ref() {
             engine.lock().unwrap().load(self.module()).map(|_| ()).map_err(|error| error.to_string())
+        } else {
+            Ok(())
+        }
+    }
+
+    fn load_temp_engine(&mut self, module: &Module) -> Result<(), String> {
+        if let Some(engine) = self.engine.as_ref() {
+            engine.lock().unwrap().load(module).map(|_| ()).map_err(|error| error.to_string())
         } else {
             Ok(())
         }
@@ -228,6 +414,52 @@ impl PlayerState {
             return;
         }
         let playing = self.is_playing();
+        if let Some(proposal) = self.session.proposal().cloned() {
+            if playing && self.audition_mode == AuditionMode::PatternProposal {
+                if let Some(engine) = self.engine.as_mut() {
+                    engine.lock().unwrap().stop();
+                }
+                self.audition_mode = AuditionMode::None;
+                self.status = "audition stopped".to_string();
+            } else {
+                let aud = audition::build_audition_module(self.module(), &proposal);
+                if let Err(err) = self.load_temp_engine(&aud) {
+                    self.status = format!("audition failed: {err}");
+                    return;
+                }
+                if let Some(engine) = self.engine.as_mut() {
+                    engine.lock().unwrap().play();
+                }
+                self.audition_mode = AuditionMode::PatternProposal;
+                self.status = "auditioning proposed pattern (looped); a accepts · r rejects".to_string();
+            }
+            return;
+        }
+        if let Some((ref score_prop, _)) = self.pending_score_proposal {
+            let score_mod = score_prop.module.clone();
+            if playing && self.audition_mode == AuditionMode::ScoreProposal {
+                if let Some(engine) = self.engine.as_mut() {
+                    engine.lock().unwrap().stop();
+                }
+                self.audition_mode = AuditionMode::None;
+                self.status = "score audition stopped".to_string();
+            } else {
+                if let Err(err) = self.load_temp_engine(&score_mod) {
+                    self.status = format!("audition failed: {err}");
+                    return;
+                }
+                if let Some(engine) = self.engine.as_mut() {
+                    engine.lock().unwrap().play();
+                }
+                self.audition_mode = AuditionMode::ScoreProposal;
+                self.status = "auditioning proposed score; a accepts · r rejects".to_string();
+            }
+            return;
+        }
+        if self.audition_mode != AuditionMode::None {
+            self.audition_mode = AuditionMode::None;
+            let _ = self.reload_engine();
+        }
         if let Some(engine) = self.engine.as_mut() {
             let mut engine = engine.lock().unwrap();
             if playing { engine.stop(); self.status = "stopped".to_string(); }
@@ -239,6 +471,10 @@ impl PlayerState {
 
     pub fn stop(&mut self) {
         if let Some(engine) = self.engine.as_mut() { engine.lock().unwrap().stop(); }
+        if self.audition_mode != AuditionMode::None {
+            self.audition_mode = AuditionMode::None;
+            let _ = self.reload_engine();
+        }
         self.status = "stopped".to_string();
     }
 
@@ -310,6 +546,198 @@ impl PlayerState {
             self.spectra = self.spectra.decayed(&now, 0.85);
         }
     }
+
+    pub fn update_meters(&mut self, dt_secs: f32) {
+        let muted = self.muted();
+        self.master_meter.update_from_spectra(&self.spectra, muted, dt_secs);
+    }
+
+    pub fn click_circle(&mut self, hit: CircleHit, audio: &dyn AudioBackend) {
+        let key = circle::hit_to_key(hit);
+        self.circle.active_sector = hit.sector;
+        self.circle.active_ring = hit.ring;
+        self.circle.mode_label = key.mode.name().to_string();
+        self.diatonic_chords = circle::diatonic_chords(key);
+        self.selected_chord_label = Some(hit.label.to_string());
+
+        let chord_mod = audition::build_chord_audition_module(self.module(), hit);
+        if audio.available() {
+            if let Err(err) = self.load_temp_engine(&chord_mod) {
+                self.status = format!("chord audition failed: {err}");
+                return;
+            }
+            if let Some(engine) = self.engine.as_mut() {
+                engine.lock().unwrap().play();
+            }
+            self.audition_mode = AuditionMode::Chord;
+            self.status = format!("auditioning {} ({}) · diatonic chords updated", hit.label, key.mode.name());
+        } else {
+            self.status = format!("{} ({}) · diatonic chords updated", hit.label, key.mode.name());
+        }
+    }
+
+    pub fn toggle_pad_ducking(&mut self) {
+        let (Some(mut score), Some(kit)) = (self.score.clone(), self.kit.clone()) else {
+            self.status = "pad ducking toggle requires a compiled score".to_string();
+            return;
+        };
+        let pad_idx = score
+            .roles
+            .iter()
+            .position(|r| r.name.eq_ignore_ascii_case("pad") || r.duck.is_some());
+        let Some(pad_idx) = pad_idx else {
+            self.status = "no pad or ducking role in this score".to_string();
+            return;
+        };
+        if let Some(target) = score.roles[pad_idx].duck {
+            self.pad_ducking_backup = Some((pad_idx, target));
+            score.roles[pad_idx].duck = None;
+            self.status = "pad sidechain ducking OFF".to_string();
+        } else {
+            let target = self
+                .pad_ducking_backup
+                .and_then(|(idx, t)| (idx == pad_idx).then_some(t))
+                .or_else(|| score.roles.iter().position(|r| r.name.eq_ignore_ascii_case("kick")));
+            let Some(target) = target else {
+                self.status = "no kick role to duck against".to_string();
+                return;
+            };
+            score.roles[pad_idx].duck = Some(target);
+            self.status = format!("pad sidechain ducking ON (SC <- {})", score.roles[target].name);
+        }
+        match paula::score::compile::compile(&score, &kit) {
+            Ok(module) => {
+                let was_playing = self.is_playing();
+                let saved_pos = self.view_pos;
+                let saved_cursor = self.cursor;
+                self.score = Some(score);
+                self.session = Session::new(module);
+                self.view_pos = saved_pos.min(self.module().song_len.saturating_sub(1));
+                self.cursor = saved_cursor.min(NUM_ROWS - 1);
+                if let Err(err) = self.reload_engine() {
+                    self.status = format!("ducking toggled, engine error: {err}");
+                } else if was_playing && self.audio_available {
+                    if let Some(engine) = self.engine.as_ref() {
+                        engine.lock().unwrap().play();
+                    }
+                }
+            }
+            Err(err) => self.status = format!("recompile failed: {err}"),
+        }
+    }
+
+    pub fn toggle_edit_mode(&mut self) {
+        self.edit_mode = !self.edit_mode;
+        if self.edit_mode {
+            self.follow = false;
+            self.edit_cursor.row = self.cursor.min(NUM_ROWS - 1);
+            self.status = format!("EDIT mode (oct {} · Tab/Shift-Tab field · F1/F2 oct · u undo · Esc exit)", self.edit_octave);
+        } else {
+            self.status = "edit mode off".to_string();
+        }
+    }
+
+    pub fn edit_step_row(&mut self, delta: i32) {
+        self.follow = false;
+        let next = (self.edit_cursor.row as i32 + delta).clamp(0, NUM_ROWS as i32 - 1) as usize;
+        self.edit_cursor.row = next;
+        self.cursor = next;
+    }
+
+    pub fn edit_next_field(&mut self) {
+        if self.edit_cursor.field == edit::EditField::FxParamLo {
+            self.edit_cursor.channel = (self.edit_cursor.channel + 1) % NUM_CHANNELS;
+        }
+        self.edit_cursor.next_field();
+    }
+
+    pub fn edit_prev_field(&mut self) {
+        if self.edit_cursor.field == edit::EditField::Note {
+            self.edit_cursor.channel = (self.edit_cursor.channel + NUM_CHANNELS - 1) % NUM_CHANNELS;
+        }
+        self.edit_cursor.prev_field();
+    }
+
+    pub fn edit_octave_delta(&mut self, delta: i8) {
+        self.edit_octave = (self.edit_octave as i8 + delta).clamp(1, 3) as u8;
+        self.status = format!("edit octave: {}", self.edit_octave);
+    }
+
+    fn apply_edited_cell(&mut self, after: paula::modfile::Cell) {
+        let pat = self.current_pattern_index();
+        let row = self.edit_cursor.row;
+        let ch = self.edit_cursor.channel;
+        if edit::apply_to_session(&mut self.session, pat, row, ch, after) {
+            if let Some(engine) = self.engine.as_ref() {
+                let _ = engine.lock().unwrap().set_cell(pat, row, ch, after);
+            }
+            self.pending_save_overwrite = None;
+            self.status = format!("edited pat {pat:02} row {row:02} ch {} · u undo · w save", ch + 1);
+        }
+    }
+
+    pub fn edit_key(&mut self, ch: char) {
+        let pat = self.current_pattern_index();
+        let row = self.edit_cursor.row;
+        let channel = self.edit_cursor.channel;
+        let Some(current) = self.module().patterns.get(pat).map(|p| p[row][channel]) else {
+            return;
+        };
+        if let Some(after) = edit::apply_key_to_cell(current, self.edit_cursor.field, ch, self.edit_octave) {
+            self.apply_edited_cell(after);
+        }
+    }
+
+    pub fn edit_delete(&mut self) {
+        let pat = self.current_pattern_index();
+        let row = self.edit_cursor.row;
+        let channel = self.edit_cursor.channel;
+        let Some(current) = self.module().patterns.get(pat).map(|p| p[row][channel]) else {
+            return;
+        };
+        let after = edit::clear_field(current, self.edit_cursor.field);
+        self.apply_edited_cell(after);
+    }
+
+    pub fn edit_backspace(&mut self) {
+        self.apply_edited_cell(edit::clear_cell());
+    }
+
+    pub fn target_mod_path(&self) -> PathBuf {
+        if let Some(ref src) = self.source_path {
+            let name = src.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+            if name.to_ascii_lowercase().ends_with(".paula.toml") {
+                let stem = &name[..name.len() - ".paula.toml".len()];
+                return src.with_file_name(format!("{stem}.mod"));
+            }
+            return src.with_extension("mod");
+        }
+        let title = self.module().title();
+        let stem: String = title
+            .chars()
+            .map(|c| if c.is_ascii_alphanumeric() || c == '-' || c == '_' { c } else { '_' })
+            .collect();
+        let stem = if stem.trim_matches('_').is_empty() { "untitled" } else { stem.trim_matches('_') };
+        PathBuf::from(format!("{stem}.mod"))
+    }
+
+    pub fn save_mod(&mut self) -> Result<PathBuf, String> {
+        let path = self.target_mod_path();
+        if path.exists() && self.pending_save_overwrite.as_ref() != Some(&path) {
+            self.pending_save_overwrite = Some(path.clone());
+            let msg = format!("{} exists; press w again to overwrite", path.display());
+            self.status = msg.clone();
+            return Err(msg);
+        }
+        std::fs::write(&path, self.module().to_bytes()).map_err(|e| {
+            let msg = format!("failed to save {}: {e}", path.display());
+            self.status = msg.clone();
+            msg
+        })?;
+        self.pending_save_overwrite = None;
+        self.status = format!("saved {}", path.display());
+        Ok(path)
+    }
 }
 
 #[cfg(test)]
@@ -319,9 +747,10 @@ mod tests {
 
     #[test]
     fn view_mode_cycles_in_order() {
+        assert_eq!(ViewMode::Studio.cycle(), ViewMode::Tracker);
         assert_eq!(ViewMode::Tracker.cycle(), ViewMode::Spectrum);
         assert_eq!(ViewMode::Spectrum.cycle(), ViewMode::Both);
-        assert_eq!(ViewMode::Both.cycle(), ViewMode::Tracker);
+        assert_eq!(ViewMode::Both.cycle(), ViewMode::Studio);
     }
 
     #[test]

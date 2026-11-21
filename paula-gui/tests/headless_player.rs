@@ -47,13 +47,15 @@ fn silent_inspection_and_view_navigation() {
     player.step_position(100);
     assert_eq!(player.view_pos, 0);
 
+    assert_eq!(player.view, ViewMode::Studio);
+    player.cycle_view();
     assert_eq!(player.view, ViewMode::Tracker);
     player.cycle_view();
     assert_eq!(player.view, ViewMode::Spectrum);
     player.cycle_view();
     assert_eq!(player.view, ViewMode::Both);
     player.cycle_view();
-    assert_eq!(player.view, ViewMode::Tracker);
+    assert_eq!(player.view, ViewMode::Studio);
 }
 
 #[test]

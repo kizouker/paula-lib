@@ -42,6 +42,16 @@ pub fn sector_labels(sector: usize) -> (&'static str, &'static str) {
     SECTORS[sector % 12]
 }
 
+/// Convert a `CircleHit` to the corresponding `paula::theory::Key` (Ionian for Major, Aeolian for Minor).
+pub fn hit_to_key(hit: CircleHit) -> Key {
+    let (maj, min) = sector_labels(hit.sector);
+    let key_str = match hit.ring {
+        Ring::Major => format!("{maj} ionian"),
+        Ring::Minor => format!("{} aeolian", min.trim_end_matches('m')),
+    };
+    Key::parse(&key_str).unwrap_or_else(|_| Key::parse("A aeolian").unwrap())
+}
+
 /// Map a pitch class to its 0..12 position on the Circle of Fifths (C = 0, G = 1, ..., F = 11).
 pub fn sector_from_pc(pc: PitchClass) -> usize {
     (pc.semitone() as usize * 7) % 12
