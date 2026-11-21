@@ -554,28 +554,58 @@ impl PlayerState {
         self.master_meter.update_from_spectra(&self.spectra, muted, dt_secs);
     }
 
-    pub fn click_circle(&mut self, hit: CircleHit, audio: &dyn AudioBackend) {
-        let key = circle::hit_to_key(hit);
+    pub fn click_circle(&mut self, hit: CircleHit, _audio: &dyn AudioBackend) {
+        let clicked = circle::hit_to_key(hit);
         self.circle.active_sector = hit.sector;
         self.circle.active_ring = hit.ring;
-        self.circle.mode_label = key.mode.name().to_string();
-        self.diatonic_chords = circle::diatonic_chords(key);
         self.selected_chord_label = Some(hit.label.to_string());
 
-        let chord_mod = audition::build_chord_audition_module(self.module(), hit);
-        if audio.available() {
-            if let Err(err) = self.load_temp_engine(&chord_mod) {
-                self.status = format!("chord audition failed: {err}");
+        // without a score there is nothing to transpose: show the clicked key's chords only
+        let (Some(text), Some(kit), Some(song_key)) = (self.score_toml.clone(), self.kit.clone(), self.score.as_ref().map(|s| s.key)) else {
+            self.circle.mode_label = clicked.mode.name().to_string();
+            self.diatonic_chords = circle::diatonic_chords(clicked);
+            self.status = format!("{} ({}) · open a score to change the song's key", hit.label, clicked.mode.name());
+            return;
+        };
+        let tonic = paula::score::transpose::target_tonic(song_key, clicked);
+        if tonic == song_key.tonic {
+            self.status = format!("already in {} {}", tonic.name(), song_key.mode.name());
+            return;
+        }
+        let (new_text, semis) = paula::score::transpose::transpose_source(&text, song_key, tonic);
+        let module = match paula::score::compile_source(&new_text, &kit, false) {
+            Ok((m, _warnings)) => m,
+            Err(diags) => {
+                self.status = format!("key change not applied: {}", paula::score::lint::render_text("score", &diags).lines().next().unwrap_or("lint error"));
                 return;
             }
-            if let Some(engine) = self.engine.as_mut() {
-                engine.lock().unwrap().play();
-            }
-            self.audition_mode = AuditionMode::Chord;
-            self.status = format!("auditioning {} ({}) · diatonic chords updated", hit.label, key.mode.name());
-        } else {
-            self.status = format!("{} ({}) · diatonic chords updated", hit.label, key.mode.name());
+        };
+        let new_score = paula::score::lint::analyze(&new_text, Some(&kit), &paula::score::lint::Options { strict: false }).score;
+        // one undo step back to the old key
+        self.prev_score_snapshot = Some((self.module().clone(), self.score_toml.clone(), self.score.clone()));
+        let was_playing = self.is_playing();
+        let pos = self.view_pos;
+        self.score_toml = Some(new_text);
+        if let Some(ref s) = new_score {
+            self.circle = circle::from_score(s);
+            self.diatonic_chords = circle::diatonic_chords(s.key);
         }
+        self.score = new_score;
+        self.session = Session::new(module);
+        self.audition_mode = AuditionMode::None;
+        self.view_pos = pos.min(self.module().song_len.saturating_sub(1));
+        self.status = match self.reload_engine() {
+            Ok(()) => {
+                // keep all four channels playing, from where the song was
+                if was_playing && self.audio_available {
+                    if let Some(engine) = self.engine.as_ref() {
+                        let _ = engine.lock().unwrap().play_from(self.view_pos as usize);
+                    }
+                }
+                format!("song moved to {} {} ({semis:+} semitones); u undoes it", tonic.name(), song_key.mode.name())
+            }
+            Err(error) => format!("key changed, but the engine did not load it: {error}"),
+        };
     }
 
     pub fn toggle_pad_ducking(&mut self) {

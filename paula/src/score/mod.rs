@@ -12,6 +12,7 @@ pub mod format;
 pub mod kit;
 pub mod lint;
 pub mod notation;
+pub mod transpose;
 
 use crate::modfile::Module;
 use crate::theory::Key;

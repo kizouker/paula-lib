@@ -88,7 +88,8 @@ fn clear_clip_and_circle_click_actions_update_state() {
     assert_eq!(p.circle.active_ring, Ring::Minor);
     assert_eq!(p.selected_chord_label.as_deref(), Some("Dm"));
     assert!(p.diatonic_chords.iter().any(|(_, _, s)| s == "Dm"));
-    assert_eq!(p.audition_mode, AuditionMode::Chord);
+    // no score loaded: the click shows the key's chords and leaves the song alone (#96)
+    assert_eq!(p.audition_mode, AuditionMode::None);
     assert_eq!(p.module(), &before_mod);
 }
 
