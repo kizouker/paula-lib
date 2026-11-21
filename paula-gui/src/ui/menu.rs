@@ -16,7 +16,7 @@ pub fn draw(
         }
         if ui.button("Kit").clicked() { app.dispatch(Action::NextKit, audio); }
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            if ui.button("Open .mod...").clicked() { app.status = "open .mod from the file dialog".to_string(); }
+            if ui.button("Open .mod...").clicked() { app.open_requested = true; }
         });
     });
 

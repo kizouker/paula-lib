@@ -70,7 +70,7 @@ pub fn draw(
                 app.dispatch(Action::SetView(view), audio);
             }
         }
-        if ui.button("Open .mod...").clicked() { app.status = "open .mod from the file dialog".to_string(); }
+        if ui.button("Open .mod...").clicked() { app.open_requested = true; }
         if app.player.as_ref().is_some_and(|player| player.session.proposal().is_some()) {
             if ui.add(egui::Button::new(RichText::new("[a Accept]").color(pink())).fill(green())).clicked() {
                 app.dispatch(Action::AcceptProposal, audio);
