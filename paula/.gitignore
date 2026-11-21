@@ -2,3 +2,6 @@ target/
 out/
 dist/
 .env
+# songs saved with w in the score menu (paula-tui, paula-gui) land next to the score
+examples/*.mod
+examples/*.wav
