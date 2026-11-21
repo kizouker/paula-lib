@@ -30,6 +30,8 @@ mod ffi {
         pub fn paula_play();
         pub fn paula_stop();
         pub fn paula_is_playing() -> i32;
+        pub fn paula_set_muted(ch: i32, on: i32);
+        pub fn paula_is_muted(ch: i32) -> i32;
         pub fn paula_get_pos() -> i32;
         pub fn paula_get_row() -> i32;
         pub fn paula_render(out: *mut i16, frames: i32);
@@ -150,6 +152,9 @@ impl Engine {
         *taken = true;
         drop(taken);
         unsafe { ffi::paula_reset() };
+        for ch in 0..4 {
+            unsafe { ffi::paula_set_muted(ch, 0) };
+        }
         Ok(Engine { rate, ev: EventState::default() })
     }
 
@@ -205,6 +210,30 @@ impl Engine {
 
     pub fn is_playing(&self) -> bool {
         unsafe { ffi::paula_is_playing() != 0 }
+    }
+
+    /// Mute or unmute channel `ch` (0..4) while the song plays. A muted channel is silent at
+    /// once; unmuting is heard from the channel's next note. Kept across `load`, cleared by `new`.
+    pub fn set_muted(&mut self, ch: usize, muted: bool) {
+        if ch < 4 {
+            unsafe { ffi::paula_set_muted(ch as i32, muted as i32) };
+        }
+    }
+
+    pub fn is_muted(&self, ch: usize) -> bool {
+        ch < 4 && unsafe { ffi::paula_is_muted(ch as i32) != 0 }
+    }
+
+    /// Mute state of the four channels.
+    pub fn muted(&self) -> [bool; 4] {
+        std::array::from_fn(|ch| self.is_muted(ch))
+    }
+
+    /// Flip the mute of channel `ch`; returns the new state.
+    pub fn toggle_mute(&mut self, ch: usize) -> bool {
+        let m = !self.is_muted(ch);
+        self.set_muted(ch, m);
+        m
     }
 
     /// Fill `out` with interleaved 16-bit stereo frames (Req 5.1). Silence while stopped (Req 5.3).

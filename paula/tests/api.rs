@@ -295,3 +295,43 @@ mod cli {
         assert_eq!(st.code(), Some(2));
     }
 }
+
+// ---- channel mute (issue #72) ----
+
+fn rio_zouk_on_demo_kit() -> paula::Module {
+    let src = std::fs::read_to_string(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("examples/rio-zouk.paula.toml")).unwrap();
+    paula::score::compile_source(&src, &paula::score::kit::demo_kit(), false).unwrap().0
+}
+
+fn energy(pcm: &[i16]) -> f64 {
+    pcm.iter().map(|&v| (v as f64).powi(2)).sum()
+}
+
+#[test]
+fn muted_channels_are_silent_and_new_engines_start_unmuted() {
+    let m = rio_zouk_on_demo_kit();
+    let mut e = paula::Engine::new(44100).unwrap();
+    e.load(&m).unwrap();
+    assert_eq!(e.muted(), [false; 4]);
+    let all = energy(&e.render_song(&m, 4.0).unwrap());
+    assert!(all > 0.0);
+
+    e.set_muted(0, true);
+    assert!(e.is_muted(0));
+    let no_kick = energy(&e.render_song(&m, 4.0).unwrap());
+    assert!(no_kick < all, "muting the kick makes the mix quieter ({no_kick} vs {all})");
+
+    for ch in 0..4 {
+        e.set_muted(ch, true);
+    }
+    assert_eq!(energy(&e.render_song(&m, 4.0).unwrap()), 0.0, "all four muted is silence");
+
+    assert!(!e.toggle_mute(2), "toggle unmutes");
+    assert_eq!(e.muted(), [true, true, false, true]);
+    let bass_only = energy(&e.render_song(&m, 4.0).unwrap());
+    assert!(bass_only > 0.0);
+    drop(e);
+
+    let e = paula::Engine::new(44100).unwrap();
+    assert_eq!(e.muted(), [false; 4], "a new engine starts with nothing muted");
+}

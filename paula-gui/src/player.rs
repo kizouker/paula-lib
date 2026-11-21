@@ -269,6 +269,21 @@ impl PlayerState {
 
     pub fn toggle_follow(&mut self) { self.follow = !self.follow; }
 
+    /// Mute or unmute channel `ch` (0..4). Silent players (no audio device) only report it.
+    pub fn toggle_mute(&mut self, ch: usize) {
+        let Some(engine) = self.engine.as_ref() else {
+            self.status = "no audio device; nothing to mute".to_string();
+            return;
+        };
+        let muted = engine.lock().unwrap().toggle_mute(ch);
+        self.status = format!("channel {} {}", ch + 1, if muted { "muted" } else { "on" });
+    }
+
+    /// Mute state of the four channels (all off without an engine).
+    pub fn muted(&self) -> [bool; 4] {
+        self.engine.as_ref().map_or([false; 4], |engine| engine.lock().unwrap().muted())
+    }
+
     pub fn cycle_view(&mut self) {
         self.view = self.view.cycle();
         self.status = format!("view: {:?}", self.view);

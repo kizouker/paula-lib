@@ -58,6 +58,15 @@ pub fn draw(
         if ui.add(egui::Button::new(follow_text).fill(if follow { cyan() } else { dim() })).clicked() {
             app.dispatch(Action::ToggleFollow, audio);
         }
+        // mute buttons, one per channel (keys 1-4): green when on, dim and struck through when muted
+        let muted = app.player.as_ref().map_or([false; 4], |player| player.muted());
+        for (ch, m) in muted.iter().enumerate() {
+            let label = RichText::new(format!("{} CH{}", if *m { "✕" } else { "♪" }, ch + 1)).color(super::rgb((0, 0, 0)));
+            let label = if *m { label.strikethrough() } else { label };
+            if ui.add(egui::Button::new(label).fill(if *m { dim() } else { green() })).on_hover_text(format!("key {}: mute / unmute", ch + 1)).clicked() {
+                app.dispatch(Action::ToggleMute(ch), audio);
+            }
+        }
         let labels = ["Tracker", "Spectrum", "Both"];
         for (index, label) in labels.iter().enumerate() {
             let selected = matches!((mode, index), (ViewMode::Tracker, 0) | (ViewMode::Spectrum, 1) | (ViewMode::Both, 2));
@@ -142,7 +151,7 @@ pub fn draw(
     let hints = if app.player.as_ref().is_some_and(|player| player.session.proposal().is_some()) {
         "a accept · r reject · u undo · space play committed · p asks when resolved"
     } else {
-        "space play/stop · ↑↓ row · PgUp/PgDn 16 · ←→ pos · f follow · s view · p ask · q back"
+        "space play/stop · 1-4 mute · ↑↓ row · PgUp/PgDn 16 · ←→ pos · f follow · s view · p ask · q back"
     };
     ui.label(RichText::new(hints).color(dim()).monospace());
     ui.label(RichText::new(status).color(dim()).monospace());

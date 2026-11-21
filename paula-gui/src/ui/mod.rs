@@ -93,6 +93,11 @@ impl eframe::App for GuiApp {
                     Key::F if self.app.screen == Screen::Player
                         && self.app.player.as_ref().is_none_or(|player| !player.ask_open) =>
                         self.app.dispatch(crate::state::Action::ToggleFollow, &self.audio),
+                    Key::Num1 | Key::Num2 | Key::Num3 | Key::Num4 if self.app.screen == Screen::Player
+                        && self.app.player.as_ref().is_none_or(|player| !player.ask_open) => {
+                        let ch = match key { Key::Num1 => 0, Key::Num2 => 1, Key::Num3 => 2, _ => 3 };
+                        self.app.dispatch(crate::state::Action::ToggleMute(ch), &self.audio);
+                    }
                     Key::S if self.app.screen == Screen::Player
                         && self.app.player.as_ref().is_none_or(|player| !player.ask_open) =>
                         self.app.dispatch(crate::state::Action::CycleView, &self.audio),
