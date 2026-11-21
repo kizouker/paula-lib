@@ -87,6 +87,40 @@ fn put_effect(pattern: &mut [[Cell; NUM_CHANNELS]; NUM_ROWS], cmd: u8, param: u8
     }
 }
 
+/// The cells a duck writes for a sound at sample volume `vol` (0..=64) and `speed` ticks per row:
+/// (Cxx volume on the hit row, Axy slide-up parameter for the next two rows, Cxx restore on the
+/// third). The hit drops to half the volume, the slide climbs about a quarter per row, and the
+/// restore puts back exactly the sample volume, so ducking never makes a sound louder.
+pub fn duck_cells(vol: u8, speed: u8) -> (u8, u8, u8) {
+    let vol = vol.min(64);
+    let low = vol / 2;
+    let ticks = speed.saturating_sub(1).max(1) as u16;
+    let per_tick = ((vol - low) as u16).div_ceil(2 * ticks).clamp(1, 15) as u8;
+    (low, per_tick << 4, vol)
+}
+
+/// Duck channel `ch` at `row`: volume down there (also on a note that starts there, when its
+/// effect slot is free), slide back up on the next two rows and restore the sample volume on the
+/// third, using only rows that have no note and no effect. Cells without a note keep the sound
+/// ringing; only its volume changes.
+fn duck_at(pattern: &mut [[Cell; NUM_CHANNELS]; NUM_ROWS], ch: usize, row: usize, vol: u8, speed: u8) {
+    let (low, slide, restore) = duck_cells(vol, speed);
+    let c = &mut pattern[row][ch];
+    if c.cmd == 0 && c.param == 0 {
+        c.cmd = 0xC;
+        c.param = low;
+    }
+    for (i, r) in (row + 1..(row + 4).min(NUM_ROWS)).enumerate() {
+        let c = &mut pattern[r][ch];
+        if c.period != 0 {
+            break; // a new note starts at its own volume anyway
+        }
+        if c.cmd == 0 && c.param == 0 {
+            (c.cmd, c.param) = if i < 2 { (0xA, slide) } else { (0xC, restore) };
+        }
+    }
+}
+
 /// Build the module. The score must come from a clean lint (no errors); `base` supplies samples.
 pub fn compile(score: &Score, base: &Module) -> Result<Module, String> {
     let mut patterns = Vec::new();
@@ -112,6 +146,16 @@ pub fn compile(score: &Score, base: &Module) -> Result<Module, String> {
                             cell.param = 0xD0 | role.delay;
                         }
                         pattern[b * 16 + pl.step][role.channel] = cell;
+                    }
+                }
+                // sidechain-style ducking, after every role of the bar is placed
+                for role in &score.roles {
+                    let Some(t) = role.duck else { continue };
+                    for pl in role_bar(&score.roles[t], &score.key, chords, in_section) {
+                        if !pl.ghost {
+                            let vol = base.samples.get(role.sample as usize - 1).map_or(64, |s| s.volume);
+                            duck_at(&mut pattern, role.channel, b * 16 + pl.step, vol, score.speed);
+                        }
                     }
                 }
             }

@@ -295,3 +295,67 @@ fn a_delayed_hit_is_heard_two_ticks_later() {
     let heard = quiet(&b, start + (2.2 * tick) as usize, start + (4.0 * tick) as usize);
     assert!(heard > early * 4 + 10, "late hit sounds after 2 ticks ({early} before, {heard} after)");
 }
+
+// ---------- sidechain-style ducking (issue #75) ----------
+
+const DUCK_SONG: &str = "[progression]\nv = \"Am | Am | Am | Am\"\n[role.kick]\nchannel = 1\nsample = 1\ngroove = \"x.......x.......\"\n[role.keys]\nchannel = 4\nsample = 5\nregister = \"C-2..B-2\"\nrule = \"root\"\ngroove = \"x...............\"\nduck = \"kick\"\n[song]\nform = \"v 4\"\n";
+
+#[test]
+fn ducking_drops_the_volume_on_kick_rows_and_slides_back() {
+    let m = compile(&format!("{HEAD}{DUCK_SONG}"));
+    // row 0: the pad note starts ducked
+    let vol = demo_kit().samples[4].volume;
+    let (low, slide, restore) = paula::score::compile::duck_cells(vol, 6);
+    assert_eq!(restore, vol);
+    assert!(low < vol);
+    let start = cell(&m, 0, 0, 3);
+    assert!(start.period != 0);
+    assert_eq!((start.cmd, start.param), (0xC, low));
+    // rows 1 and 2: effect-only slides up, row 3 restores the sample volume, no new note
+    for r in [1, 2] {
+        let c = cell(&m, 0, r, 3);
+        assert_eq!((c.period, c.cmd, c.param), (0, 0xA, slide), "row {r}");
+    }
+    assert_eq!((cell(&m, 0, 3, 3).cmd, cell(&m, 0, 3, 3).param), (0xC, restore));
+    // row 8 (second kick): no note on the pad channel, just the duck
+    let mid = cell(&m, 0, 8, 3);
+    assert_eq!((mid.period, mid.cmd, mid.param), (0, 0xC, low));
+    assert_eq!(cell(&m, 0, 4, 3), Cell::default(), "nothing after the restore");
+}
+
+#[test]
+fn duck_must_name_another_role_on_another_channel() {
+    for (bad, want) in [("duck = \"kick\"", "duck = \"snare\""), ("duck = \"kick\"", "duck = \"keys\"")] {
+        let src = format!("{HEAD}{}", DUCK_SONG.replace(bad, want));
+        let d = compile_source(&src, &demo_kit(), false).unwrap_err();
+        assert!(lint::render_text("t", &d).contains("duck"), "{want}");
+    }
+}
+
+#[test]
+fn ducking_makes_the_pad_quieter_right_after_the_kick() {
+    // render the pad alone, with and without the duck: just after row 8 it must be quieter
+    let ducked = compile(&format!("{HEAD}{DUCK_SONG}"));
+    let plain = compile(&format!("{HEAD}{}", DUCK_SONG.replace("duck = \"kick\"\n", "")));
+    let solo = |m: &Module| {
+        let mut m = m.clone();
+        for p in m.patterns.iter_mut() {
+            for row in p.iter_mut() {
+                row[0].period = 0;
+                row[0].sample = 0;
+            }
+        }
+        let mut e = Engine::new(RATE).unwrap();
+        e.load(&m).unwrap();
+        e.render_song(&m, 3.0).unwrap()
+    };
+    let (a, b) = (solo(&ducked), solo(&plain));
+    let row = RATE as f64 * 2.5 / 90.0 * 6.0;
+    let level = |pcm: &[i16], from: f64| {
+        let (s, e) = ((from * row) as usize * 2, ((from + 0.5) * row) as usize * 2);
+        pcm[s..e].iter().map(|v| (*v as f64).powi(2)).sum::<f64>()
+    };
+    assert!(level(&a, 8.2) < level(&b, 8.2) * 0.6, "the pad dips after the second kick");
+    assert!(level(&a, 4.2) <= level(&b, 4.2) * 1.02, "ducking never makes the pad louder than without it");
+    assert!(level(&a, 12.2) > level(&b, 12.2) * 0.95, "and it is back at its own volume before the next bar");
+}

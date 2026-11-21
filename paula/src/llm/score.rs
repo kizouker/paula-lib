@@ -28,6 +28,7 @@ channel = 1             # 1..4, each channel once
 sample = 1              # sample number in the kit (listed in the request)
 groove = "x.......x......."   # 16 steps per bar: x hit, o ghost (quiet), . rest; up to 4 bars separated by spaces, repeated
 delay = 2               # optional: every x plays this many ticks late (0..5), a laid-back feel; one tick is about 29 ms at 86 BPM
+duck = "kick"           # optional: this role dips to half volume on every hit of that role and swells back (sidechain feel)
 register = "C-1..G-2"   # pitched roles only: lowest..highest note, C-1..B-3
 rule = "root"           # pitched roles only: root, root-fifth, chord-tones, guide-tones, walk
 [song]
@@ -36,7 +37,7 @@ form = "intro 4, verse 8, chorus 8"   # progression name and bars; bar counts ar
 Rules: a role without rule and register is a drum. Use only samples the kit has. Keep every part the user did not ask to change exactly as it is. Prefer few, strong ideas over busy grooves.
 
 Style notes:
-- Brazilian zouk (the default meaning of "zouk"; never Antillean zouk, a different style): 76-96 BPM, minor keys, danced to R&B and pop zouk remixes, Cabo Love and ghetto zouk. Feel: "bom - chick chick - bom": kick and bass on 1 and 3, the chicks on 2, 2& and 4, 4&, played a little late (delay 1-3). Bass long and heavy on the root, a sustained pad or chord once per bar. No ragtime oom-pah (bass on the beat with chords between beats), no busy melody, no 808 sounds.
+- Brazilian zouk (the default meaning of "zouk"; never Antillean zouk, a different style): 76-96 BPM, minor keys, danced to R&B and pop zouk remixes, Cabo Love and ghetto zouk. Feel: "bom - chick chick - bom": kick and bass on 1 and 3, the chicks on 2, 2& and 4, 4&, played a little late (delay 1-3). Bass long and heavy on the root, a sustained pad or chord once per bar that ducks under the kick. No ragtime oom-pah (bass on the beat with chords between beats), no busy melody, no 808 sounds.
 "#;
 
 /// A score the model proposed, already linted and compiled onto the kit.

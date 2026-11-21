@@ -57,6 +57,9 @@ pub struct Role {
     /// laid-back feel: every hit (`x`) of this role plays this many ticks late (EDx note delay),
     /// 0 up to speed - 1; at speed 6 and 90 BPM one tick is about 28 ms. Ghosts are not delayed.
     pub delay: Option<Spanned<i64>>,
+    /// sidechain-style ducking: name of another role (usually the kick); on every hit of that
+    /// role this role's volume drops to half and slides back up over the next two rows
+    pub duck: Option<Spanned<String>>,
 }
 
 #[derive(Debug, Deserialize)]
