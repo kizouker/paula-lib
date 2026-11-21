@@ -7,6 +7,7 @@ pub mod client;
 pub mod key;
 pub mod parse;
 pub mod prompt;
+pub mod score;
 
 use crate::modfile::Module;
 use crate::session::Proposal;

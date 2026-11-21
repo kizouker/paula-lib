@@ -18,6 +18,9 @@
 //!   --score song.paula.toml --base kit.mod [--save out.mod] [--wav out.wav] [--strict]
 //!                                       compile a score onto the samples of a base module; --save writes the MOD,
 //!                                       --wav renders it, with neither it plays to the sound output
+//!   --write-score "Brazilian zouk, 86 BPM, A minor" --base kit.mod --out new.paula.toml [--from old.paula.toml] [--wav out.wav]
+//!                                       the model writes a score (or revises --from); paula lints and compiles it first.
+//!                                       Writing --out is the accept; with --from the changed lines are shown.
 //! Options: --seconds N (limit, default 600), --rate HZ (for --wav/--raw, default 44100).
 //! Exit codes: 0 ok, 2 usage, otherwise the Req 9 error code + 10.
 
@@ -55,12 +58,19 @@ struct Args {
     events: bool,
     spectrum: bool,
     diesel: bool,
+    /// --write-score <text>: the model writes (or with --from revises) a score
+    write_score: Option<String>,
+    #[cfg_attr(not(feature = "llm"), allow(dead_code))]
+    from: Option<PathBuf>,
+    #[cfg_attr(not(feature = "llm"), allow(dead_code))]
+    out: Option<PathBuf>,
 }
 
 const USAGE: &str = "usage: paula-play <file.mod> [--wav <out.wav> | --raw] [--events] [--spectrum] [--diesel] [--seconds N] [--rate HZ]
        paula-play --compose <text> --save <out.mod> [--base <song.mod>] [--wav <out.wav>]
        paula-play --check <song.paula.toml> [--base <kit.mod>] [--json] [--strict]
-       paula-play --score <song.paula.toml> --base <kit.mod> [--save <out.mod>] [--wav <out.wav>] [--strict]";
+       paula-play --score <song.paula.toml> --base <kit.mod> [--save <out.mod>] [--wav <out.wav>] [--strict]
+       paula-play --write-score <text> --base <kit.mod> --out <new.paula.toml> [--from <old.paula.toml>] [--wav <out.wav>]";
 
 fn parse_args() -> Result<Args, String> {
     let mut it = std::env::args().skip(1);
@@ -68,6 +78,7 @@ fn parse_args() -> Result<Args, String> {
     let (mut events, mut spectrum, mut diesel) = (false, false, false);
     let (mut compose, mut base, mut save) = (None, None, None);
     let (mut check, mut score, mut strict) = (None, None, false);
+    let (mut write_score, mut from, mut out) = (None, None, None);
     while let Some(a) = it.next() {
         match a.as_str() {
             "--wav" => mode = Mode::Wav(it.next().ok_or("--wav needs a file name")?.into()),
@@ -78,6 +89,9 @@ fn parse_args() -> Result<Args, String> {
             "--check" => check = Some(PathBuf::from(it.next().ok_or("--check needs a file name")?)),
             "--score" => score = Some(PathBuf::from(it.next().ok_or("--score needs a file name")?)),
             "--strict" => strict = true,
+            "--write-score" => write_score = Some(it.next().ok_or("--write-score needs a text")?),
+            "--from" => from = Some(PathBuf::from(it.next().ok_or("--from needs a file name")?)),
+            "--out" => out = Some(PathBuf::from(it.next().ok_or("--out needs a file name")?)),
             "--json" => {} // read by --check from the raw arguments
             "--events" => events = true,
             "--spectrum" => spectrum = true,
@@ -89,8 +103,23 @@ fn parse_args() -> Result<Args, String> {
             s => file = Some(PathBuf::from(s)),
         }
     }
+    if write_score.is_some() {
+        if file.is_some() || compose.is_some() || score.is_some() || check.is_some() {
+            return Err("--write-score cannot be combined with <file.mod>, --compose, --score or --check".into());
+        }
+        if base.is_none() || out.is_none() {
+            return Err("--write-score needs --base <kit.mod> and --out <new.paula.toml> (writing --out is how you accept)".into());
+        }
+        if events || spectrum || diesel || matches!(mode, Mode::Raw) {
+            return Err("--write-score cannot be combined with --raw, --events, --spectrum or --diesel".into());
+        }
+        return Ok(Args { file, check, score, strict, compose, base, save, mode, seconds, rate, events, spectrum, diesel, write_score, from, out });
+    }
+    if from.is_some() || out.is_some() {
+        return Err("--from and --out belong to --write-score".into());
+    }
     if check.is_some() {
-        return Ok(Args { file, check, score, strict, compose, base, save, mode, seconds, rate, events, spectrum, diesel });
+        return Ok(Args { file, check, score, strict, compose, base, save, mode, seconds, rate, events, spectrum, diesel, write_score, from, out });
     }
     if score.is_some() {
         if file.is_some() || compose.is_some() {
@@ -102,7 +131,7 @@ fn parse_args() -> Result<Args, String> {
         if events || spectrum || diesel || matches!(mode, Mode::Raw) {
             return Err("--score cannot be combined with --raw, --events, --spectrum or --diesel".into());
         }
-        return Ok(Args { file, check, score, strict, compose, base, save, mode, seconds, rate, events, spectrum, diesel });
+        return Ok(Args { file, check, score, strict, compose, base, save, mode, seconds, rate, events, spectrum, diesel, write_score, from, out });
     }
     if compose.is_some() {
         if file.is_some() {
@@ -125,7 +154,7 @@ fn parse_args() -> Result<Args, String> {
     if events && matches!(mode, Mode::Raw) {
         return Err("--events cannot be combined with --raw (both use stdout)".into());
     }
-    Ok(Args { file, check, score, strict, compose, base, save, mode, seconds, rate, events, spectrum, diesel })
+    Ok(Args { file, check, score, strict, compose, base, save, mode, seconds, rate, events, spectrum, diesel, write_score, from, out })
 }
 
 fn fail(e: Error) -> ExitCode {
@@ -153,6 +182,9 @@ fn main() -> ExitCode {
     }
     if args.score.is_some() {
         return score_main(&args);
+    }
+    if let Some(text) = &args.write_score {
+        return write_score_main(&args, text);
     }
     if let Some(text) = &args.compose {
         return compose_main(&args, text);
@@ -248,6 +280,60 @@ fn score_main(args: &Args) -> ExitCode {
             Err(e) => fail(e),
         },
     }
+}
+
+#[cfg(not(feature = "llm"))]
+fn write_score_main(_: &Args, _: &str) -> ExitCode {
+    eprintln!("paula-play: this build has no `llm` feature; rebuild with `cargo build --features llm`");
+    ExitCode::from(10 + Error::UnsupportedOperation(String::new()).code() as u8)
+}
+
+/// --write-score: the model writes a score (or revises --from), paula lints and compiles it,
+/// writes it to --out, shows what changed and optionally renders it to WAV.
+#[cfg(feature = "llm")]
+fn write_score_main(args: &Args, request: &str) -> ExitCode {
+    let base = match read_module(args.base.as_ref().expect("checked in parse_args")) {
+        Ok(m) => m,
+        Err(e) => return fail(e),
+    };
+    let current = match &args.from {
+        Some(p) => match std::fs::read_to_string(p) {
+            Ok(s) => Some(s),
+            Err(e) => return fail(Error::Io(format!("{}: {e}", p.display()))),
+        },
+        None => None,
+    };
+    let mut model = match llm::client::Client::from_env() {
+        Ok(m) => m,
+        Err(e) => return fail(llm::ComposeError::Model(e).into()),
+    };
+    let proposal = match llm::score::write_score(&mut model, request, current.as_deref(), &base, args.strict, &mut |s| eprintln!("paula-play: {s}")) {
+        Ok(p) => p,
+        Err(llm::score::ScoreError::Model(e)) => return fail(llm::ComposeError::Model(e).into()),
+        Err(e) => return fail(Error::CorruptData(e.to_string())),
+    };
+    let out = args.out.as_ref().expect("checked in parse_args");
+    eprint!("{}", paula::score::lint::render_text(&out.display().to_string(), &proposal.warnings));
+    if let Some(old) = &current {
+        for line in llm::score::changed_lines(old, &proposal.text) {
+            eprintln!("{line}");
+        }
+    }
+    if let Err(e) = std::fs::write(out, &proposal.text) {
+        return fail(Error::Io(format!("{}: {e}", out.display())));
+    }
+    eprintln!("paula-play: wrote {} ({} patterns)", out.display(), proposal.module.patterns.len());
+    if let Mode::Wav(w) = &args.mode {
+        let pcm = match render(&proposal.module, args.rate, args.seconds) {
+            Ok(p) => p,
+            Err(e) => return fail(e),
+        };
+        if let Err(e) = std::fs::write(w, wav::to_bytes(&pcm, args.rate)) {
+            return fail(Error::Io(format!("{}: {e}", w.display())));
+        }
+        eprintln!("paula-play: wrote {} ({:.1} s)", w.display(), pcm.len() as f64 / 2.0 / args.rate as f64);
+    }
+    ExitCode::SUCCESS
 }
 
 #[cfg(not(feature = "llm"))]
