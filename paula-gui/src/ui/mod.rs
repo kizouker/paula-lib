@@ -100,6 +100,11 @@ impl eframe::App for GuiApp {
                         let ch = match key { Key::Num1 => 0, Key::Num2 => 1, Key::Num3 => 2, _ => 3 };
                         self.app.dispatch(crate::state::Action::ToggleMute(ch), &self.audio);
                     }
+                    Key::Plus | Key::Equals | Key::Minus if self.app.screen == Screen::Player
+                        && self.app.player.as_ref().is_none_or(|player| !player.ask_open) => {
+                        let delta = if *key == Key::Minus { -2 } else { 2 };
+                        self.app.dispatch(crate::state::Action::Tempo(delta), &self.audio);
+                    }
                     Key::S if self.app.screen == Screen::Player
                         && self.app.player.as_ref().is_none_or(|player| !player.ask_open) =>
                         self.app.dispatch(crate::state::Action::CycleView, &self.audio),

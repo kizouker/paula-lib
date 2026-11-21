@@ -31,6 +31,8 @@ pub enum Action {
     ToggleFollow,
     /// mute or unmute channel 0..4
     ToggleMute(usize),
+    /// change the BPM by this much while playing (+ and - keys)
+    Tempo(i32),
     CycleView,
     SetView(ViewMode),
     Row(i32),
@@ -278,6 +280,7 @@ impl AppState {
             Action::Stop => if let Some(player) = self.player.as_mut() { player.stop(); self.status = player.status.clone(); }
             Action::ToggleFollow => if let Some(player) = self.player.as_mut() { player.toggle_follow(); }
             Action::ToggleMute(ch) => if let Some(player) = self.player.as_mut() { player.toggle_mute(ch); }
+            Action::Tempo(delta) => if let Some(player) = self.player.as_mut() { player.change_bpm(delta); }
             Action::CycleView => if let Some(player) = self.player.as_mut() { player.cycle_view(); self.status = player.status.clone(); }
             Action::SetView(view) => if let Some(player) = self.player.as_mut() {
                 player.view = view;
