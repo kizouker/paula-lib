@@ -37,3 +37,8 @@ pt_pal_editor/vs2019_project/pt_pal_editor/x64/*
 # local editor settings and scratch files
 .vscode/
 scratch/
+
+# Local agent files (added by apply-template.sh)
+CLAUDE.local.md
+state.json
+RETRO_LOG.MD
